@@ -1,0 +1,13 @@
+# Generated test reference audio (regenerate via: python3 make_reference.py)
+ref/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,40 @@
+MIXLENS — UPLOAD TO GITHUB (2 WAYS)
+====================================
+
+OPTION A — GitHub website (no git knowledge needed)
+---------------------------------------------------
+1. Go to github.com  →  New repository  →  name it (e.g. "mixlens")
+   → keep it Public → click "Create repository"
+2. On the repo page click "uploading an existing file"
+3. Open this unzipped folder, select ALL files & folders and drag them in.
+   Tip: enable "show hidden files" in your OS so you can also include
+   the .github folder and .gitignore (optional but recommended).
+4. Click "Commit changes"
+5. Go to repo Settings → Pages → Source: "Deploy from branch"
+   → Branch: main, folder: root → Save
+6. After ~1 minute your app is LIVE at:
+   https://YOUR_USERNAME.github.io/mixlens/
+
+
+OPTION B — git command line (recommended — keeps everything intact)
+-------------------------------------------------------------------
+1. Create an EMPTY repository on github.com (don't add README/license there)
+2. In this unzipped folder run:
+
+   git init -b main
+   git add -A
+   git commit -m "MixLens v1.0"
+   git remote add origin https://github.com/YOUR_USERNAME/mixlens.git
+   git push -u origin main
+
+3. repo Settings → Pages → Source: "GitHub Actions"
+   → the included workflow auto-deploys on every push.
+
+
+NOTES
+-----
+- The app is 100% client-side: users' audio never leaves their browser.
+- Repo must be Public for free GitHub Pages hosting.
+- License is MIT (see LICENSE) — change or remove it if you prefer.
+- Tests included (node test.js / node cross_validate.js) — they prove the
+  loudness engine matches the EBU R128 reference within 0.04 LU.

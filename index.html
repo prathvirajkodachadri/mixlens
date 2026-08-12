@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MixLens — Audio Analyzer for Mixing</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">◉</div>
+    <div>
+      <h1>MixLens <span class="ver">v1.0</span></h1>
+      <p class="tagline">Audio analyzer for mixing — built for deep cinematic narration (KGF style)</p>
+    </div>
+  </div>
+  <div class="header-controls">
+    <div class="select-wrap">
+      <label for="presetSel">Content preset</label>
+      <select id="presetSel">
+        <option value="narration" selected>Deep Narration (KGF)</option>
+        <option value="vocal">Vocal / Song</option>
+        <option value="mix">Full Mix / Reference</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <label for="targetSel">Loudness target</label>
+      <select id="targetSel">
+        <option value="-16">−16 LUFS · under music / film bed</option>
+        <option value="-14" selected>−14 LUFS · standalone (YouTube)</option>
+        <option value="-9">−9 LUFS · loud promo / trailer</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- DROP ZONE -->
+  <section id="dropZone" class="dropzone">
+    <div class="dz-inner">
+      <div class="dz-icon">⬇</div>
+      <p><strong>Drop your audio file here</strong> or click to browse</p>
+      <p class="dz-sub">WAV · MP3 · FLAC · M4A · OGG — analyzed 100% locally in your browser, nothing is uploaded</p>
+      <input type="file" id="fileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff" hidden>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="progressWrap" class="panel hidden">
+    <div class="progress-label"><span id="progressLabel">Decoding…</span><span id="progressPct">0%</span></div>
+    <div class="progress-bar"><div id="progressFill"></div></div>
+  </section>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden">
+
+    <!-- FILE INFO + TRANSPORT -->
+    <section class="panel file-panel">
+      <div class="file-meta">
+        <span id="fileName" class="fname">—</span>
+        <span id="fileMeta" class="fmeta">—</span>
+      </div>
+      <div class="transport">
+        <button id="playBtn" class="btn">▶ Play</button>
+        <span id="timeLabel">0:00.0 / 0:00.0</span>
+        <button id="exportMarkedBtn" class="btn accent" title="Exports a WAV with sibilance/rumble/clip markers embedded — Cubase shows them as WAV markers">⤓ WAV + markers for Cubase</button>
+        <button id="exportBtn" class="btn ghost">⤓ Export report</button>
+      </div>
+    </section>
+
+    <!-- WAVEFORM -->
+    <section class="panel">
+      <div class="panel-title">Waveform <span class="hint">click to seek · ▲ sibilance hits · ▼ rumble events</span></div>
+      <canvas id="waveCanvas"></canvas>
+      <canvas id="waveOverlay"></canvas>
+    </section>
+
+    <!-- LOUDNESS + STEREO -->
+    <div class="grid-2">
+      <section class="panel">
+        <div class="panel-title">Loudness &amp; Dynamics</div>
+        <div class="meter-grid">
+          <div class="meter-card hero">
+            <div class="meter-label">Integrated Loudness</div>
+            <div class="meter-value"><span id="lufsInt">—</span><small> LUFS</small></div>
+            <div class="meter-sub" id="lufsDelta">target —</div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Short-term max</div>
+            <div class="meter-value"><span id="lufsShort">—</span><small> LUFS</small></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Loudness Range</div>
+            <div class="meter-value"><span id="lra">—</span><small> LU</small></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">True Peak</div>
+            <div class="meter-value"><span id="truePeak">—</span><small> dBTP</small></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Sample Peak L / R</div>
+            <div class="meter-value small" id="peakLR">—</div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Crest Factor</div>
+            <div class="meter-value"><span id="crest">—</span><small> dB</small></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Noise Floor</div>
+            <div class="meter-value"><span id="noiseFloor">—</span><small> dBFS</small></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Clipped samples</div>
+            <div class="meter-value"><span id="clipped">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">Stereo Image</div>
+        <div class="meter-grid">
+          <div class="meter-card hero">
+            <div class="meter-label">Channel format</div>
+            <div class="meter-value small" id="chFormat">—</div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">L/R Correlation</div>
+            <div class="meter-value"><span id="corrVal">—</span></div>
+            <div class="corr-bar"><div id="corrFill"></div></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-label">Side energy (width)</div>
+            <div class="meter-value"><span id="widthVal">—</span><small> %</small></div>
+          </div>
+          <div class="meter-card wide">
+            <div class="meter-label">Mono compatibility</div>
+            <div class="mono-verdict" id="monoVerdict">—</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SPECTRUM -->
+    <section class="panel">
+      <div class="panel-title">Spectrum <span class="hint">solid = your audio · dashed = pink-noise tilt reference</span></div>
+      <canvas id="specCanvas"></canvas>
+    </section>
+
+    <!-- BAND BALANCE -->
+    <section class="panel">
+      <div class="panel-title">Band Balance <span class="hint">level vs pink-tilt expectation for the selected preset</span></div>
+      <div id="bandList"></div>
+    </section>
+
+    <!-- FIX PREVIEW -->
+    <section class="panel">
+      <div class="panel-title">Fix Preview <span class="hint">hear the suggested fixes live · A/B with the master switch</span></div>
+      <div class="fx-row">
+        <label class="fx-toggle main"><input type="checkbox" id="fxEnable"> <span>Preview ON</span></label>
+        <label class="fx-toggle"><input type="checkbox" id="fxHpf" checked> HPF (rumble)</label>
+        <label class="fx-toggle"><input type="checkbox" id="fxMud" checked> Mud cut</label>
+        <label class="fx-toggle"><input type="checkbox" id="fxPres" checked> Presence</label>
+        <label class="fx-toggle"><input type="checkbox" id="fxSib" checked> De-ess (light)</label>
+        <label class="fx-toggle"><input type="checkbox" id="fxLevel" checked> Leveling + loudness</label>
+      </div>
+      <div id="fxInfo" class="fx-info">Run an analysis first.</div>
+      <div class="dz-sub">Approximate audition only — apply the exact settings with your Cubase/plugins chain.</div>
+    </section>
+
+    <!-- REFERENCE COMPARE -->
+    <section class="panel" id="refPanel">
+      <div class="panel-title">Reference Compare <span class="hint">match your voice to a KGF reference</span></div>
+      <div id="refEmpty">
+        <button id="refBtn" class="btn">＋ Load reference track</button>
+        <input type="file" id="refInput" accept="audio/*" hidden>
+        <span class="dz-sub">Load a KGF narration/track and MixLens overlays its spectrum and tells you exactly what to change.</span>
+      </div>
+      <div id="refResult" class="hidden">
+        <div class="ref-head">
+          <span id="refName" class="fname">—</span>
+          <button id="refClear" class="btn ghost small-btn">✕ remove</button>
+        </div>
+        <canvas id="deltaCanvas"></canvas>
+        <div id="refFindings"></div>
+      </div>
+    </section>
+
+    <!-- RUMBLE -->
+    <section class="panel">
+      <div class="panel-title">Rumble &amp; Low-Frequency Noise <span class="hint">20–80 Hz events, time-located · click to audition</span></div>
+      <div id="rumbleList"><span class="dz-sub">Run an analysis first.</span></div>
+    </section>
+
+    <!-- SIBILANCE -->
+    <section class="panel">
+      <div class="panel-title">Sibilance Hits <span class="hint">click a timestamp to audition</span></div>
+      <div id="sibList"><span class="dz-sub">Run an analysis first.</span></div>
+    </section>
+
+    <!-- SUGGESTIONS -->
+    <section class="panel">
+      <div class="panel-title">Mixing Suggestions <span class="hint" id="suggPresetLabel"></span></div>
+      <div id="suggList"></div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  MixLens · offline browser analysis · loudness: EBU R128 K-weighting (approx.) · true peak: oversampled estimate
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
