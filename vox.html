@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoxLens — All-in-One Vocal Chain</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="vox.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo vox-logo">◉</div>
+    <div>
+      <h1>VoxLens <span class="ver">v1.0</span></h1>
+      <p class="tagline">All-in-one vocal chain — gate · de-ess · tone · comp · heat · limiter</p>
+    </div>
+  </div>
+  <div class="header-controls">
+    <div class="select-wrap">
+      <label for="presetSel">Chain preset</label>
+      <select id="presetSel">
+        <option value="default" selected>Default (clean)</option>
+        <option value="narration">Deep Narration (KGF)</option>
+        <option value="song">Vocal / Song</option>
+        <option value="podcast">Podcast Voice</option>
+        <option value="polish">Gentle Polish</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <label>&nbsp;</label>
+      <a class="btn ghost small-btn nav-btn" href="index.html">← MixLens Analyzer</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- DROP ZONE -->
+  <section id="dropZone" class="dropzone">
+    <div class="dz-inner">
+      <div class="dz-icon">⬇</div>
+      <p><strong>Drop a vocal recording here</strong> or click to browse</p>
+      <p class="dz-sub">WAV · MP3 · FLAC · M4A · OGG — processed 100% locally in your browser, nothing is uploaded</p>
+      <input type="file" id="fileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff" hidden>
+    </div>
+  </section>
+
+  <!-- TRANSPORT + METERS -->
+  <section id="playerPanel" class="panel hidden">
+    <div class="panel-title">Source <span class="hint">click the waveform to seek</span></div>
+    <div class="file-panel">
+      <div>
+        <span class="fname" id="fileName">—</span>
+        <span class="fmeta" id="fileMeta"></span>
+      </div>
+      <div class="transport">
+        <button id="playBtn" class="btn accent">▶ Play</button>
+        <button id="stopBtn" class="btn ghost">■ Stop</button>
+        <span id="timeLabel">0:00 / 0:00</span>
+      </div>
+    </div>
+    <canvas id="waveCanvas" height="90"></canvas>
+    <div class="meter-strip">
+      <div class="lvl-group">
+        <span class="lvl-label">IN</span>
+        <div class="lvl"><div class="lvl-fill" id="mIn"></div></div>
+        <span class="lvl-db" id="mInDb">−∞</span>
+      </div>
+      <div class="lvl-group">
+        <span class="lvl-label">OUT</span>
+        <div class="lvl"><div class="lvl-fill out" id="mOut"></div></div>
+        <span class="lvl-db" id="mOutDb">−∞</span>
+      </div>
+      <button id="bypassBtn" class="btn ghost bypass-btn" title="A/B the processed vs dry signal">BYPASS</button>
+      <button id="exportBtn" class="btn accent">⬇ Export WAV</button>
+    </div>
+    <p class="export-note" id="exportNote"></p>
+  </section>
+
+  <!-- THE CHAIN -->
+  <section id="chainPanel" class="chain hidden">
+    <!-- module cards are injected by vox.js -->
+  </section>
+
+  <p class="hint-bar">Drag knobs vertically · Shift = fine · mouse wheel works · double-click resets · files are processed in the original sample rate and bit-perfect until you turn a module on.</p>
+</main>
+
+<footer>
+  VoxLens — part of the MixLens toolkit · 100% client-side, audio never leaves your browser · MIT
+</footer>
+
+<script src="vox-dsp.js"></script>
+<script src="vox.js"></script>
+</body>
+</html>
