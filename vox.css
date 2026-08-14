@@ -1,0 +1,48 @@
+/* VoxLens — plugin faceplate styles (extends MixLens dark studio theme) */
+
+.vox-logo{background:radial-gradient(circle at 35% 35%,#8ef0c8,#0f7a52);box-shadow:0 0 24px rgba(62,207,142,.35);color:#04180f}
+.nav-btn{text-decoration:none;display:inline-block}
+
+/* ---------- transport / meters ---------- */
+#waveCanvas{width:100%;height:90px;display:block;border-radius:8px;background:#0e1118;cursor:crosshair;margin-top:12px}
+.meter-strip{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}
+.lvl-group{display:flex;align-items:center;gap:8px;flex:1;min-width:200px}
+.lvl-label{font-size:10px;letter-spacing:.12em;color:var(--faint);width:26px;text-align:right}
+.lvl{flex:1;height:10px;border-radius:99px;background:#0e1118;border:1px solid var(--line);overflow:hidden}
+.lvl-fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#0f7a52,var(--green) 70%,var(--amber) 92%,var(--red));transition:width .07s linear}
+.lvl-fill.out{background:linear-gradient(90deg,#b4690e,var(--amber) 70%,var(--amber2) 92%,var(--red))}
+.lvl-db{font-family:var(--mono);font-size:11.5px;color:var(--dim);width:64px;font-variant-numeric:tabular-nums}
+.bypass-btn.armed{border-color:var(--red);color:var(--red);box-shadow:0 0 10px rgba(255,93,93,.25)}
+.export-note{font-size:11.5px;color:var(--faint);margin-top:8px;font-family:var(--mono)}
+
+/* ---------- chain grid / module cards ---------- */
+.chain{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.module{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px 14px;position:relative;transition:border-color .2s}
+.module.on{border-color:#3d5a46}
+.module.on .mod-dot{background:var(--green);box-shadow:0 0 8px rgba(62,207,142,.7)}
+.mod-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.mod-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--text);display:flex;align-items:center;gap:8px}
+.mod-dot{width:8px;height:8px;border-radius:99px;background:#333a4c;transition:.15s}
+.mod-toggle{position:relative;width:34px;height:19px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;transition:.15s;flex:none}
+.mod-toggle::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:99px;background:#5a6072;transition:.15s}
+.module.on .mod-toggle{background:#123626;border-color:#2a5c40}
+.module.on .mod-toggle::after{left:17px;background:var(--green)}
+.gr-badge{font-family:var(--mono);font-size:10.5px;color:var(--faint);background:#0e1118;border:1px solid var(--line);border-radius:6px;padding:2px 7px;min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+.gr-badge.hot{color:var(--amber2);border-color:#4a3a1a;background:#171308}
+
+/* ---------- knobs ---------- */
+.knob-row{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-around}
+.knob-wrap{display:flex;flex-direction:column;align-items:center;gap:1px;width:64px;user-select:none}
+.knob-wrap canvas{width:54px;height:54px;cursor:ns-resize;touch-action:none;outline:none;border-radius:50%}
+.knob-wrap canvas:focus-visible{box-shadow:0 0 0 2px rgba(245,166,35,.4)}
+.knob-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);white-space:nowrap}
+.knob-val{font-family:var(--mono);font-size:10.5px;color:var(--amber2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.knob-hint{font-size:8.5px;color:#464c5e;white-space:nowrap;height:10px}
+
+.hint-bar{color:var(--faint);font-size:11.5px;text-align:center;margin-top:4px}
+
+@media(max-width:640px){
+  .chain{grid-template-columns:1fr 1fr}
+  .knob-wrap{width:58px}
+  .knob-wrap canvas{width:48px;height:48px}
+}
