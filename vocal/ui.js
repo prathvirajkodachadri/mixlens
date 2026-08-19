@@ -21,7 +21,17 @@
 }(typeof self !== 'undefined' ? self : this, function(DSP, Engine, Report) {
 
   const $ = id => document.getElementById(id);
-  const { fmtFreq, fmtDb, freqToNote } = DSP;
+
+  // DSP helpers with safe fallbacks so a partially loaded (or stale cached)
+  // module bundle can never crash the whole UI with an undefined access.
+  const dspHelpers = DSP || {};
+  const fmtDb = dspHelpers.fmtDb || ((x, d = 1) => (isFinite(x) ? (x > 0 ? '+' : '') + x.toFixed(d) + ' dB' : '—'));
+  const fmtFreq = dspHelpers.fmtFreq || ((hz) => {
+    if (!isFinite(hz) || hz <= 0) return '—';
+    if (hz >= 1000) return (hz / 1000).toFixed(hz >= 10000 ? 1 : 2) + ' kHz';
+    return Math.round(hz) + ' Hz';
+  });
+  const freqToNote = dspHelpers.freqToNote || ((hz) => ({ note: '—', cents: 0, midi: 0 }));
 
   // Global state
   let currentAudioBuffer = null;
@@ -37,12 +47,60 @@
    * Initialize UI bindings and drag/drop handlers
    */
   function init() {
+    if (!verifyEngineBoot()) return;
     setupDropzone();
     setupTabs();
     setupTransport();
     setupExportButtons();
     setupDemoButton();
     setupOptionalDropzones();
+  }
+
+  /**
+   * Make sure the analysis engine actually loaded before wiring the UI.
+   *
+   * Stale browser caches can mix old and new script files (e.g. an old
+   * engine.js that still references the removed Pro-Q preset module), which
+   * previously surfaced mid-analysis as
+   * "Cannot read properties of undefined (reading 'generateProQ4Preset')".
+   * If the engine is missing, attempt ONE cache-busted reload, then show a
+   * clear recovery banner instead of failing silently.
+   */
+  function verifyEngineBoot() {
+    if (Engine && typeof Engine.analyzeVocal === 'function') return true;
+
+    try {
+      if (!window.sessionStorage.getItem('mixlens_fresh_reload')) {
+        window.sessionStorage.setItem('mixlens_fresh_reload', '1');
+        const href = String(window.location.href).split('#')[0];
+        const sep = href.indexOf('?') === -1 ? '?' : '&';
+        window.location.replace(href + sep + '_fresh=' + Date.now());
+        return false;
+      }
+    } catch (e) {
+      // Sandboxed or storage-restricted environments: fall through to the banner.
+    }
+
+    showBootError();
+    return false;
+  }
+
+  function showBootError() {
+    try {
+      if (document.getElementById('mixlensBootError')) return;
+      const box = document.createElement('div');
+      box.id = 'mixlensBootError';
+      box.setAttribute('role', 'alert');
+      box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;padding:14px 18px;font:14px/1.5 system-ui,sans-serif;text-align:center;';
+      const freshUrl = String(window.location.pathname || './') + '?_fresh=' + Date.now();
+      box.innerHTML = '<b>MixLens could not start: the analysis engine script failed to load.</b> ' +
+        'Your browser is likely holding a stale cached copy. ' +
+        'Hard-refresh this page (Ctrl/Cmd+Shift+R), or ' +
+        '<a href="' + freshUrl + '" style="color:#fcd34d;font-weight:600;">click here to load a fresh copy</a>.';
+      (document.body || document.documentElement).appendChild(box);
+    } catch (e) {
+      // Ignore — nothing else we can do if even DOM access fails.
+    }
   }
 
   /* =========================================================================
@@ -108,8 +166,17 @@
       bitDepth: file.name.toLowerCase().endsWith('.wav') ? 24 : 16
     };
 
+    await runPipelineSafely(decodedBuffer, fileMeta);
+  }
+
+  /**
+   * Run the analysis pipeline with unified error reporting, so every entry
+   * point (file upload, demo button, optional instrumental/reference drops)
+   * surfaces the same clear, actionable message on failure.
+   */
+  async function runPipelineSafely(audioBuffer, fileMeta, options = {}) {
     try {
-      await runAnalysisPipeline(decodedBuffer, fileMeta);
+      await runAnalysisPipeline(audioBuffer, fileMeta, options);
     } catch (err) {
       console.error('Error analyzing audio:', err);
       alert('Audio decoded successfully, but analysis failed: ' + (err.message || 'Unknown analysis error.'));
@@ -194,7 +261,7 @@
         bitDepth: 24
       };
 
-      await runAnalysisPipeline(buffer, fileMeta);
+      await runPipelineSafely(buffer, fileMeta);
     });
   }
 
@@ -203,6 +270,13 @@
      ========================================================================= */
 
   async function runAnalysisPipeline(audioBuffer, fileMeta, options = {}) {
+    if (!Engine || typeof Engine.analyzeVocal !== 'function') {
+      throw new Error(
+        'The analysis engine module failed to load (possibly a stale cached script). ' +
+        'Hard-refresh the page (Ctrl/Cmd+Shift+R) and try again.'
+      );
+    }
+
     showProgress(true);
 
     const result = await Engine.analyzeVocal(
@@ -1301,7 +1375,7 @@
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const ab = await file.arrayBuffer();
         const instBuf = await audioCtx.decodeAudioData(ab);
-        await runAnalysisPipeline(currentAudioBuffer, currentAnalysisResult.reportJson.file, { instrumentalBuffer: instBuf });
+        await runPipelineSafely(currentAudioBuffer, currentAnalysisResult.reportJson.file, { instrumentalBuffer: instBuf });
         alert('Instrumental track loaded! Check the MIX MASKING tab.');
       });
     }
@@ -1315,7 +1389,7 @@
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const ab = await file.arrayBuffer();
         const refBuf = await audioCtx.decodeAudioData(ab);
-        await runAnalysisPipeline(currentAudioBuffer, currentAnalysisResult.reportJson.file, { referenceBuffer: refBuf });
+        await runPipelineSafely(currentAudioBuffer, currentAnalysisResult.reportJson.file, { referenceBuffer: refBuf });
         alert('Reference vocal loaded! Check the REFERENCE VOCAL tab.');
       });
     }

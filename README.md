@@ -89,8 +89,19 @@ node test-vocal.js      # Comprehensive test of all 18 Vocal Analysis Engine mod
 node test.js            # Unit tests for MixLens Audio Analyzer engine
 node test-vox.js        # 27 DSP tests for VoxLens Vocal Chain plugin
 node test-ui-sim.js      # Headless DOM and UI interaction simulation
+node test-boot-guard.js # Boot guard: stale-cache recovery & module-load failure handling
 node verify_kweight.js  # K-weighting filter accuracy verification
 ```
+
+---
+
+## 🔧 Troubleshooting
+
+- **"Analysis failed: Cannot read properties of undefined (reading …)"** — your browser
+  is running a stale cached copy of the scripts from an older release. Hard-refresh the
+  page (**Ctrl/Cmd + Shift + R**). Since v2.0.1 all assets are cache-busted (`?v=2.0.1`),
+  and the UI auto-detects a missing engine module, reloads one fresh copy by itself, and
+  shows a recovery banner instead of a cryptic error.
 
 ---
 
@@ -127,6 +138,7 @@ test-vocal.js               Automated test harness for Vocal Engine
 test.js                     Automated test harness for Analyzer Engine
 test-vox.js                 Automated test harness for VoxLens DSP
 test-ui-sim.js              Headless UI interaction test
+test-boot-guard.js          Boot guard & stale-cache recovery test
 ```
 
 ---
