@@ -9,6 +9,14 @@ const vm = require('vm');
 // Mock browser environment
 const listeners = {};
 const mockElements = {};
+const initiallyHiddenCanvases = new Set([
+  'spectrumCanvas',
+  'spectrogramCanvas',
+  'timelineCanvas',
+  'pitchCanvas',
+  'eqCurveCanvas'
+]);
+let imageDataCreateCount = 0;
 
 function createMockElement(tag, id = '') {
   const el = {
@@ -47,6 +55,12 @@ function createMockElement(tag, id = '') {
       if (fns) fns.forEach(fn => fn({ preventDefault() {} }));
     },
     getBoundingClientRect() {
+      // Canvas elements inside display:none tab panels have no layout box in
+      // a real browser. Keep the mock faithful so zero-size drawing regressions
+      // (especially createImageData(0, 0)) are caught by this test.
+      if (initiallyHiddenCanvases.has(id)) {
+        return { left: 0, top: 0, width: 0, height: 0 };
+      }
       return { left: 0, top: 0, width: 800, height: 260 };
     },
     getContext(type) {
@@ -67,6 +81,10 @@ function createMockElement(tag, id = '') {
           return { addColorStop() {} };
         },
         createImageData(w, h) {
+          if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+            throw new TypeError("Failed to execute 'createImageData': The source width is zero or not a number.");
+          }
+          imageDataCreateCount++;
           return { data: new Uint8ClampedArray(w * h * 4), width: w, height: h };
         },
         putImageData() {}
@@ -187,6 +205,24 @@ for (const s of scripts) {
   await loadDemoFns[0]({ preventDefault() {} });
 
   console.log('Checking rendered summary and tabs...');
+  if (imageDataCreateCount !== 0) {
+    console.error('FAIL: attempted to render ImageData while the spectrogram tab was hidden');
+    process.exit(1);
+  }
+
+  // Once the spectrogram tab becomes visible, its click handler should draw it.
+  initiallyHiddenCanvases.delete('spectrogramCanvas');
+  const spectrogramTabFns = listeners['btn_tab-spectrogram:click'];
+  if (!spectrogramTabFns || !spectrogramTabFns.length) {
+    console.error('FAIL: spectrogram tab click listener not found');
+    process.exit(1);
+  }
+  spectrogramTabFns[0]({ preventDefault() {} });
+  if (imageDataCreateCount !== 1) {
+    console.error('FAIL: visible spectrogram was not rendered exactly once');
+    process.exit(1);
+  }
+
   const summaryEl = mockElements['overviewSummaryText'];
   console.log('Summary Text:', summaryEl ? summaryEl.textContent : 'none');
   if (!summaryEl || !summaryEl.textContent) {
