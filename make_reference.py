@@ -2,8 +2,9 @@
 """Generate reference test signals + compute ground-truth EBU R128 LUFS with pyloudnorm."""
 import json, numpy as np, soundfile as sf, pyloudnorm as pyln
 
-OUT = "/home/user/mix-analyzer/ref"
-import os; os.makedirs(OUT, exist_ok=True)
+import os
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref")
+os.makedirs(OUT, exist_ok=True)
 
 rng = np.random.default_rng(42)
 
@@ -13,7 +14,7 @@ def save(name, data, rate):
     meter = pyln.Meter(rate)
     arr = data if data.ndim > 1 else data
     lufs = meter.integrated_loudness(arr)
-    return {"path": path, "rate": rate, "lufs": float(lufs),
+    return {"path": os.path.join("ref", f"{name}.wav"), "rate": rate, "lufs": float(lufs),
             "channels": int(data.shape[1]) if data.ndim > 1 else 1,
             "samples": int(data.shape[0])}
 

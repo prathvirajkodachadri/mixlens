@@ -37,4 +37,6 @@ NOTES
 - Repo must be Public for free GitHub Pages hosting.
 - License is MIT (see LICENSE) — change or remove it if you prefer.
 - Tests included (node test.js / node cross_validate.js) — they prove the
-  loudness engine matches the EBU R128 reference within 0.04 LU.
+  loudness engine matches the EBU R128 reference within 0.3 LU.
+  Cross-validation generates ref/ fixtures via node make_reference.js
+  (or python3 make_reference.py if pyloudnorm is available).

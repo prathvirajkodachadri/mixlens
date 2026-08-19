@@ -83,6 +83,10 @@ function parseMarkedWav(u8){
 }
 
 (async () => {
+  if (!fs.existsSync('ref/reference.json')) {
+    console.log('ref/reference.json missing — generating fixtures via make_reference.js');
+    require('child_process').execFileSync(process.execPath, ['make_reference.js'], { stdio: 'inherit' });
+  }
   const ref = JSON.parse(fs.readFileSync('ref/reference.json', 'utf8'));
 
   console.log('=== LUFS cross-validation vs pyloudnorm (tolerance ±0.3 LU) ===');
