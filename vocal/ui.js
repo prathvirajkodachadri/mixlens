@@ -54,7 +54,11 @@
     const fileInput = $('vocalFileInput');
     if (!dz || !fileInput) return;
 
-    dz.addEventListener('click', () => fileInput.click());
+    dz.addEventListener('click', (e) => {
+      // The file input lives inside the dropzone, so ignore its bubbling click
+      // rather than recursively calling fileInput.click().
+      if (e.target !== fileInput) fileInput.click();
+    });
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) handleAudioFile(file);
@@ -77,27 +81,38 @@
     showProgress(true);
     updateProgress('Reading audio file…', 10);
 
+    let decodedBuffer;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') await audioCtx.resume();
 
       const arrayBuffer = await file.arrayBuffer();
       updateProgress('Decoding audio data…', 20);
+      decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      currentAudioBuffer = decodedBuffer;
+      if (!decodedBuffer || !Number.isFinite(decodedBuffer.duration) || decodedBuffer.duration <= 0) {
+        throw new Error('The file contains no decodable audio samples.');
+      }
+    } catch (err) {
+      console.error('Error reading or decoding audio:', err);
+      alert('Failed to decode audio file: ' + (err.message || 'Unknown format or corrupted audio.'));
+      showProgress(false);
+      return;
+    }
 
-      const fileMeta = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        bitDepth: file.name.toLowerCase().endsWith('.wav') ? 24 : 16
-      };
+    currentAudioBuffer = decodedBuffer;
+    const fileMeta = {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      bitDepth: file.name.toLowerCase().endsWith('.wav') ? 24 : 16
+    };
 
+    try {
       await runAnalysisPipeline(decodedBuffer, fileMeta);
     } catch (err) {
-      console.error('Error decoding audio:', err);
-      alert('Failed to decode audio file: ' + (err.message || 'Unknown format or corrupted audio.'));
+      console.error('Error analyzing audio:', err);
+      alert('Audio decoded successfully, but analysis failed: ' + (err.message || 'Unknown analysis error.'));
       showProgress(false);
     }
   }
@@ -251,6 +266,38 @@
     if (dash) dash.classList.toggle('hidden', !show);
   }
 
+  /**
+   * Prepare a canvas for crisp, responsive drawing.
+   *
+   * Hidden tab panels have a 0 × 0 bounding box. Browsers reject
+   * createImageData(0, 0), so callers must defer drawing until the tab is
+   * visible instead of treating that rendering error as an audio decode error.
+   */
+  function prepareCanvas(canvas) {
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.round(rect.width);
+    const height = Math.round(rect.height);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      return null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const rawDpr = Number(window.devicePixelRatio) || 1;
+    const dpr = Math.max(1, Math.min(3, rawDpr));
+    const pixelWidth = Math.max(1, Math.round(width * dpr));
+    const pixelHeight = Math.max(1, Math.round(height * dpr));
+
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+    ctx.scale(dpr, dpr);
+
+    return { ctx, width, height, pixelWidth, pixelHeight, dpr };
+  }
+
   function renderFileMeta(file) {
     const nameEl = $('vocalFileName');
     const metaEl = $('vocalFileMeta');
@@ -358,14 +405,10 @@
   function drawSpectrum() {
     const canvas = $('spectrumCanvas');
     if (!canvas || !currentAnalysisResult) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    const prepared = prepareCanvas(canvas);
+    if (!prepared) return;
 
-    const w = rect.width;
-    const h = rect.height;
+    const { ctx, width: w, height: h } = prepared;
     const { spectrum, tonal, decision } = currentAnalysisResult.raw;
     const { frequencies, avgSpectrumDb, medianSpectrumDb, p90SpectrumDb } = spectrum;
 
@@ -527,34 +570,34 @@
   function drawSpectrogram() {
     const canvas = $('spectrogramCanvas');
     if (!canvas || !currentAnalysisResult) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    const prepared = prepareCanvas(canvas);
+    if (!prepared) return;
 
-    const w = rect.width;
-    const h = rect.height;
+    const { ctx, width: w, height: h, pixelWidth, pixelHeight } = prepared;
     const { spectrum, events } = currentAnalysisResult.raw;
-    const { timeFrames, frequencies, numBins } = spectrum;
+    const { timeFrames, numBins } = spectrum;
 
     if (!timeFrames.length) return;
 
-    const imgData = ctx.createImageData(w, h);
+    // ImageData uses backing-store pixels and ignores the context transform.
+    // Rendering at the physical canvas size keeps the heatmap sharp on HiDPI
+    // displays while vector overlays below continue to use CSS coordinates.
+    const imgData = ctx.createImageData(pixelWidth, pixelHeight);
     const data = imgData.data;
 
     const minF = 50, maxF = 18000;
     const totalDuration = timeFrames[timeFrames.length - 1].time;
+    const safeDuration = totalDuration > 0 ? totalDuration : 1;
 
-    for (let px = 0; px < w; px++) {
-      const t = (px / w) * totalDuration;
+    for (let px = 0; px < pixelWidth; px++) {
+      const t = (px / pixelWidth) * safeDuration;
       // Find nearest frame
-      const frameIdx = Math.min(timeFrames.length - 1, Math.max(0, Math.floor((t / totalDuration) * timeFrames.length)));
+      const frameIdx = Math.min(timeFrames.length - 1, Math.max(0, Math.floor((t / safeDuration) * timeFrames.length)));
       const frame = timeFrames[frameIdx];
 
-      for (let py = 0; py < h; py++) {
+      for (let py = 0; py < pixelHeight; py++) {
         // Logarithmic frequency mapping
-        const f = minF * Math.pow(maxF / minF, (h - py) / h);
+        const f = minF * Math.pow(maxF / minF, (pixelHeight - py) / pixelHeight);
         const bin = Math.min(numBins - 1, Math.max(0, Math.round(f / spectrum.binWidth)));
         const db = frame.magDb ? frame.magDb[bin] : -100;
 
@@ -566,7 +609,7 @@
         const g = Math.round(200 * Math.pow(intensity, 1.8));
         const b = Math.round(255 * Math.pow(intensity, 3.5));
 
-        const pixelIdx = (py * w + px) * 4;
+        const pixelIdx = (py * pixelWidth + px) * 4;
         data[pixelIdx] = r;
         data[pixelIdx + 1] = g;
         data[pixelIdx + 2] = b;
@@ -579,7 +622,7 @@
     // Overlay event markers
     if (events && events.allEvents) {
       events.allEvents.forEach(ev => {
-        const x = (ev.start / totalDuration) * w;
+        const x = (ev.start / safeDuration) * w;
         ctx.strokeStyle = ev.type === 'sibilance' ? 'var(--v-red)' : (ev.type === 'plosive' ? 'var(--v-orange)' : 'var(--v-cyan)');
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -599,14 +642,10 @@
   function drawTimeline() {
     const canvas = $('timelineCanvas');
     if (!canvas || !currentAnalysisResult) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    const prepared = prepareCanvas(canvas);
+    if (!prepared) return;
 
-    const w = rect.width;
-    const h = rect.height;
+    const { ctx, width: w, height: h } = prepared;
     const { mono, duration, events } = currentAnalysisResult.raw;
 
     ctx.fillStyle = '#0a0c10';
@@ -825,14 +864,10 @@
   function drawPitchPlot() {
     const canvas = $('pitchCanvas');
     if (!canvas || !currentAnalysisResult) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    const prepared = prepareCanvas(canvas);
+    if (!prepared) return;
 
-    const w = rect.width;
-    const h = rect.height;
+    const { ctx, width: w, height: h } = prepared;
     const { pitch, duration } = currentAnalysisResult.raw;
     const { pitchTrack } = pitch;
 
@@ -975,14 +1010,10 @@
   function drawEqCurve() {
     const canvas = $('eqCurveCanvas');
     if (!canvas || !currentAnalysisResult) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    const prepared = prepareCanvas(canvas);
+    if (!prepared) return;
 
-    const w = rect.width;
-    const h = rect.height;
+    const { ctx, width: w, height: h } = prepared;
     const { decision } = currentAnalysisResult.raw;
     const eqPlan = decision.eqPlan || [];
 
