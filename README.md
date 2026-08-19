@@ -2,7 +2,7 @@
 
 A browser-based, studio-grade audio engineering suite powered by 100% offline, zero-dependency digital signal processing.
 
-1. **🎙 MixLens Vocal Analysis Engine (`index.html`)** — An AI-assisted vocal mixing and analysis engine that analyzes raw vocal recordings and produces measurable, evidence-based engineering reports, dynamic EQ plans, and FabFilter Pro-Q 4 presets.
+1. **🎙 MixLens Vocal Analysis Engine (`index.html`)** — An AI-assisted vocal mixing and analysis engine that analyzes raw vocal recordings and produces a complete, evidence-based engineering report (health, pitch, formants, tonal balance, events, dynamics, and a plugin-agnostic EQ plan).
 2. **📊 MixLens Audio Analyzer (`analyzer.html`)** — EBU R128 loudness and spectral analyzer tuned for cinematic narration (KGF style) and general mixing work.
 3. **🎛 VoxLens Vocal Chain (`vox.html`)** — An XVox-style all-in-one real-time vocal chain plugin in the browser with live DSP preview and 24-bit WAV export.
 
@@ -41,9 +41,9 @@ Every recommendation is backed by measurable DSP evidence rather than generic EQ
 | **Module 17** | **Reference Vocal Compare** | Dual audio upload comparing source vocal against target reference track for delta spectrum curves and dynamic matching. |
 | **Module 18** | **Engineering Decision Engine** | Prioritized decision matrix (`P0` Recording issues, `P1` Corrective, `P2` Tonal, `P3` Fine tuning, `P4` Enhancement) yielding 3–8 targeted EQ bands (`CUT`, `BOOST`, `DYNAMIC_CUT`, `DYNAMIC_BOOST`, `DE_ESS`, `COMPRESS`, `AUTOMATE`, `LEAVE_UNCHANGED`). |
 
-### 🎛 FabFilter Pro-Q 4 Preset Generation
+### 📄 Complete Vocal Report
 
-Generates clean, machine-readable parameter models and downloadable `.ffp` preset files for FabFilter Pro-Q 4 / Pro-Q 3 with filter shapes (HPF, Bell, Dynamic Bell, Shelf, Notch), Q factors, dynamic range, and threshold values.
+After you upload a vocal, MixLens opens a full engineering report covering all 18 analysis modules: recording health, spectrum, pitch/vibrato/harmonics, formants, 16-zone tonal balance, resonances, dynamic spectral behavior, EBU R128 loudness, sibilance/plosives/breaths, stereo/phase, recommendations, and a plugin-agnostic EQ / processing plan. Download it as a `.txt` file — no VST preset is generated.
 
 ---
 
@@ -120,7 +120,7 @@ vocal/                      Modular Vocal Analysis DSP & Decision Engine
 ├── stereo.js               Module 16: Inter-channel correlation, Mid/Side, Phase hazard
 ├── reference.js            Module 17: Source vs Target reference vocal comparative delta
 ├── decision.js             Module 18: Engineering Decision Engine & 10-Stage Signal Chain
-├── proq.js                 FabFilter Pro-Q 4 preset model & .ffp binary builder
+├── report.js               Complete detailed vocal report (text + HTML)
 ├── engine.js               Master pipeline coordinator
 └── ui.js                   UI controller, Canvas plots (Spectrum, Spectrogram, Timeline)
 test-vocal.js               Automated test harness for Vocal Engine

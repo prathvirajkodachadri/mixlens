@@ -20,7 +20,7 @@ const Stereo = require('./vocal/stereo');
 const Masking = require('./vocal/masking');
 const Reference = require('./vocal/reference');
 const Decision = require('./vocal/decision');
-const ProQ = require('./vocal/proq');
+const Report = require('./vocal/report');
 const Engine = require('./vocal/engine');
 
 function makeBuffer(fs, dur, gen) {
@@ -206,8 +206,16 @@ function check(name, ok, detail = '') {
   check('Executive summary is populated', report.executiveSummary && report.executiveSummary.length > 20, report.executiveSummary);
   check('Recommendations array populated', report.recommendations && report.recommendations.length > 0, `${report.recommendations.length} recommendations`);
   check('EQ Plan has 1 to 8 bands', report.eqPlan && report.eqPlan.length >= 1 && report.eqPlan.length <= 8, `${report.eqPlan.length} bands`);
-  check('FabFilter Pro-Q 4 preset generated', report.proQ4Preset && report.proQ4Preset.plugin === 'FabFilter Pro-Q 4', report.proQ4Preset.name);
-  check('Pro-Q XML file generated', fullAnalysis.proQ4Xml && fullAnalysis.proQ4Xml.includes('<FabFilterPreset'), 'XML output valid');
+  check('No Pro-Q / VST preset is generated', !report.proQ4Preset && !fullAnalysis.proQ4Xml, 'preset fields absent');
+  check('Complete text report generated', fullAnalysis.detailedTextReport && fullAnalysis.detailedTextReport.includes('COMPLETE VOCAL ANALYSIS REPORT'), `chars = ${fullAnalysis.detailedTextReport ? fullAnalysis.detailedTextReport.length : 0}`);
+  check('Complete HTML report generated', fullAnalysis.detailedHtmlReport && fullAnalysis.detailedHtmlReport.includes('Complete Vocal Analysis Report'), 'HTML report present');
+  check('Text report covers health, pitch, and events',
+    /RECORDING HEALTH/.test(fullAnalysis.detailedTextReport) &&
+    /PITCH \(F0\)/.test(fullAnalysis.detailedTextReport) &&
+    /VOCAL EVENTS/.test(fullAnalysis.detailedTextReport),
+    'all major sections present');
+  const rebuilt = Report.buildDetailedTextReport(report);
+  check('Report builder is deterministic from JSON', rebuilt.includes(report.file.name) && rebuilt.includes(String(report.mixReadinessScore)), report.file.name);
 
   console.log('\n========================================');
   console.log(fails === 0 ? '✅ ALL VOCAL ENGINE TESTS PASSED (100% SUCCESS)' : `❌ ${fails} TEST(S) FAILED`);

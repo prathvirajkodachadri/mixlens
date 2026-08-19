@@ -15,7 +15,7 @@
     <div class="logo">◉</div>
     <div>
       <h1>MixLens <span class="ver">v2.0</span></h1>
-      <p class="tagline">Professional Vocal Analysis Engine — Analyze your vocal. Understand the problems. Build an intelligent mixing plan.</p>
+      <p class="tagline">Professional Vocal Analysis Engine — Upload a vocal. Get a complete, evidence-based engineering report.</p>
     </div>
   </div>
   <div class="header-controls">
@@ -33,8 +33,8 @@
     <div class="hero-badge">AI-Assisted Vocal Engineering</div>
     <h2 class="hero-title">Professional Vocal Analysis Engine</h2>
     <p class="hero-sub">
-      Analyze your vocal. Understand the problems. Build an intelligent mixing plan.<br>
-      High-precision offline DSP measures recording health, F0 pitch, formants, resonances, dynamic harshness, sibilance, and plosives to synthesize targeted corrective EQ plans and FabFilter Pro-Q 4 presets.
+      Analyze your vocal. Understand every problem. Read a complete engineering report.<br>
+      High-precision offline DSP measures recording health, F0 pitch, formants, resonances, dynamic harshness, sibilance, plosives, loudness, and stereo/phase — then writes a full, evidence-based vocal report. No VST presets.
     </p>
 
     <div class="hero-actions">
@@ -89,8 +89,8 @@
         <button id="vocalPlayBtn" class="btn accent">▶ Play</button>
         <button id="vocalStopBtn" class="btn ghost">■ Stop</button>
         <span id="vocalTimeLabel" style="font-family:var(--v-mono);font-size:12.5px;color:var(--v-text-dim)">0:00.0 / 0:00.0</span>
-        <button id="downloadProQBtn" class="btn ghost" title="Download FabFilter Pro-Q 4 preset (.ffp)">⤓ Pro-Q 4 Preset</button>
-        <button id="downloadTextReportBtn" class="btn ghost" title="Download summary report (.txt)">⤓ Report</button>
+        <button id="downloadTextReportBtn" class="btn accent" title="Download the complete vocal analysis report (.txt)">⤓ Full Report</button>
+        <button id="copyTextReportBtn" class="btn ghost" title="Copy the complete report to clipboard">📋 Copy Report</button>
       </div>
     </section>
 
@@ -109,7 +109,8 @@
     <!-- NAVIGATION TABS -->
     <div class="vocal-tabs-wrap">
       <div class="vocal-tabs">
-        <button class="v-tab-btn active" data-tab="tab-overview">Overview</button>
+        <button class="v-tab-btn active" data-tab="tab-report">Full Report</button>
+        <button class="v-tab-btn" data-tab="tab-overview">Overview</button>
         <button class="v-tab-btn" data-tab="tab-spectrum">Spectrum <span class="v-tab-badge">20–20k</span></button>
         <button class="v-tab-btn" data-tab="tab-spectrogram">Spectrogram <span class="v-tab-badge">Heatmap</span></button>
         <button class="v-tab-btn" data-tab="tab-timeline">Timeline <span class="v-tab-badge">Events</span></button>
@@ -124,13 +125,24 @@
         <button class="v-tab-btn" data-tab="tab-masking">Mix Masking</button>
         <button class="v-tab-btn" data-tab="tab-reference">Reference Compare</button>
         <button class="v-tab-btn" data-tab="tab-recommendations">Recommendations</button>
-        <button class="v-tab-btn" data-tab="tab-eqplan">EQ Plan <span class="v-tab-badge">Pro-Q 4</span></button>
+        <button class="v-tab-btn" data-tab="tab-eqplan">EQ Plan</button>
         <button class="v-tab-btn" data-tab="tab-json">JSON</button>
       </div>
     </div>
 
+    <!-- TAB 0: COMPLETE DETAILED REPORT -->
+    <div id="tab-report" class="v-tab-content">
+      <section class="panel">
+        <div class="panel-title">
+          Complete Vocal Analysis Report
+          <span class="hint">Every measured module, timestamp, and recommendation for this upload</span>
+        </div>
+        <div id="fullReportViewer" class="full-report-host">Waiting for a vocal upload…</div>
+      </section>
+    </div>
+
     <!-- TAB 1: OVERVIEW -->
-    <div id="tab-overview" class="v-tab-content">
+    <div id="tab-overview" class="v-tab-content hidden">
       <div class="panel">
         <div class="panel-title">Vocal Character Profile <span class="hint">11-dimension acoustic radar</span></div>
         <div id="overviewCharGrid" class="character-grid"></div>
@@ -411,12 +423,12 @@
       </section>
     </div>
 
-    <!-- TAB 16: EQ PLAN & PRO-Q 4 -->
+    <!-- TAB 16: EQ PLAN -->
     <div id="tab-eqplan" class="v-tab-content hidden">
       <section class="panel">
         <div class="panel-title">
-          FabFilter Pro-Q 4 Intelligent Preset Builder
-          <span class="hint">3–8 targeted bands synthesized from measured spectral data</span>
+          Suggested EQ / Filter Plan
+          <span class="hint">3–8 targeted bands from measured spectral data — plugin-agnostic, not a VST preset</span>
         </div>
         <div class="canvas-wrap">
           <canvas id="eqCurveCanvas" class="canvas-plot" style="height:180px"></canvas>
@@ -440,16 +452,6 @@
           </table>
         </div>
 
-        <div class="proq-card">
-          <div class="proq-head">
-            <span class="proq-title">FabFilter Pro-Q 4 Preset Export</span>
-            <div class="proq-actions">
-              <button id="copyProQBtn" class="btn ghost">📋 Copy Pro-Q JSON</button>
-              <button id="downloadProQBtn2" class="btn accent" onclick="$('downloadProQBtn').click()">⤓ Download .ffp Preset</button>
-            </div>
-          </div>
-          <p style="font-size:12.5px;color:var(--v-text-dim)">Download the generated `.ffp` preset file directly into your FabFilter Presets directory, or copy the JSON parameter schema.</p>
-        </div>
       </section>
     </div>
 
@@ -491,7 +493,7 @@
 <script src="vocal/masking.js"></script>
 <script src="vocal/reference.js"></script>
 <script src="vocal/decision.js"></script>
-<script src="vocal/proq.js"></script>
+<script src="vocal/report.js"></script>
 <script src="vocal/engine.js"></script>
 <script src="vocal/ui.js"></script>
 
