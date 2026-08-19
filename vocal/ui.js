@@ -7,18 +7,18 @@
  * - F0 pitch intonation & vibrato graph
  * - DAW transport audio player with seek & event jumping
  * - Real-time demo audio synthesizer
- * - Deterministic report export & FabFilter Pro-Q 4 preset downloads
+ * - Complete detailed vocal report (on-screen + downloadable)
  */
 
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['./dsp', './engine', './proq'], factory);
+    define(['./dsp', './engine', './report'], factory);
   } else if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./dsp'), require('./engine'), require('./proq'));
+    module.exports = factory(require('./dsp'), require('./engine'), require('./report'));
   } else {
-    root.VocalUI = factory(root.VocalDSP, root.VocalEngine, root.VocalProQ);
+    root.VocalUI = factory(root.VocalDSP, root.VocalEngine, root.VocalReport);
   }
-}(typeof self !== 'undefined' ? self : this, function(DSP, Engine, ProQ) {
+}(typeof self !== 'undefined' ? self : this, function(DSP, Engine, Report) {
 
   const $ = id => document.getElementById(id);
   const { fmtFreq, fmtDb, freqToNote } = DSP;
@@ -241,6 +241,8 @@
     renderRecommendationsTab(result);
     renderEqPlanTab(result);
     renderJsonTab(result);
+    renderFullReportTab(result);
+    showReportTab();
   }
 
   /* =========================================================================
@@ -311,24 +313,29 @@
      5. TAB CONTROLLER
      ========================================================================= */
 
+  function activateTab(targetTab) {
+    const tabBtns = document.querySelectorAll('.v-tab-btn');
+    tabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === targetTab));
+    document.querySelectorAll('.v-tab-content').forEach(content => {
+      content.classList.toggle('hidden', content.id !== targetTab);
+    });
+
+    if (targetTab === 'tab-spectrum') drawSpectrum();
+    if (targetTab === 'tab-spectrogram') drawSpectrogram();
+    if (targetTab === 'tab-timeline') drawTimeline();
+    if (targetTab === 'tab-pitch') drawPitchPlot();
+    if (targetTab === 'tab-eqplan') drawEqCurve();
+  }
+
+  function showReportTab() {
+    activateTab('tab-report');
+  }
+
   function setupTabs() {
     const tabBtns = document.querySelectorAll('.v-tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        tabBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const targetTab = btn.getAttribute('data-tab');
-        document.querySelectorAll('.v-tab-content').forEach(content => {
-          content.classList.toggle('hidden', content.id !== targetTab);
-        });
-
-        // Trigger canvas resize/redraw if needed
-        if (targetTab === 'tab-spectrum') drawSpectrum();
-        if (targetTab === 'tab-spectrogram') drawSpectrogram();
-        if (targetTab === 'tab-timeline') drawTimeline();
-        if (targetTab === 'tab-pitch') drawPitchPlot();
-        if (targetTab === 'tab-eqplan') drawEqCurve();
+        activateTab(btn.getAttribute('data-tab'));
       });
     });
   }
@@ -986,9 +993,19 @@
     }
   }
 
-  // EQ PLAN & PRO-Q TAB
+  // FULL DETAILED REPORT TAB
+  function renderFullReportTab(result) {
+    const host = $('fullReportViewer');
+    if (!host) return;
+    const html = result.detailedHtmlReport || (Report && Report.buildDetailedHtmlReport
+      ? Report.buildDetailedHtmlReport(result.reportJson)
+      : '');
+    host.innerHTML = html || '<p class="rpt-empty">Report unavailable.</p>';
+  }
+
+  // EQ PLAN TAB
   function renderEqPlanTab(result) {
-    const { eqPlan, proQ4Preset } = result.reportJson;
+    const { eqPlan } = result.reportJson;
     const tableBody = $('eqPlanTableBody');
     if (tableBody) {
       tableBody.innerHTML = eqPlan.map((b, idx) => `
@@ -1229,55 +1246,31 @@
       });
     }
 
-    // Download Pro-Q 4 Preset (.ffp)
-    const dlProQBtn = $('downloadProQBtn');
-    if (dlProQBtn) {
-      dlProQBtn.addEventListener('click', () => {
-        if (!currentAnalysisResult) return;
-        downloadFile(
-          currentAnalysisResult.proQ4Xml,
-          `${currentAnalysisResult.proQ4Preset.name}.ffp`,
-          'application/xml'
-        );
-      });
+    function getFullReportText() {
+      if (!currentAnalysisResult) return '';
+      if (currentAnalysisResult.detailedTextReport) return currentAnalysisResult.detailedTextReport;
+      if (Report && Report.buildDetailedTextReport) {
+        return Report.buildDetailedTextReport(currentAnalysisResult.reportJson);
+      }
+      return '';
     }
 
-    // Copy Pro-Q 4 JSON
-    const cpProQBtn = $('copyProQBtn');
-    if (cpProQBtn) {
-      cpProQBtn.addEventListener('click', () => {
-        if (!currentAnalysisResult) return;
-        navigator.clipboard.writeText(JSON.stringify(currentAnalysisResult.proQ4Preset, null, 2));
-        alert('FabFilter Pro-Q 4 Preset JSON copied to clipboard!');
-      });
-    }
-
-    // Download Text Report
     const dlTextBtn = $('downloadTextReportBtn');
     if (dlTextBtn) {
       dlTextBtn.addEventListener('click', () => {
         if (!currentAnalysisResult) return;
         const r = currentAnalysisResult.reportJson;
-        let txt = `====================================================\n`;
-        txt += `MIXLENS VOCAL ANALYSIS REPORT\n`;
-        txt += `====================================================\n\n`;
-        txt += `File: ${r.file.name}\n`;
-        txt += `Duration: ${r.file.duration}s | Sample Rate: ${r.file.sampleRate} Hz\n`;
-        txt += `Peak: ${fmtDb(r.file.peakDb)} | RMS: ${fmtDb(r.file.rmsDb)} | Integrated: ${r.file.integratedLufs} LUFS\n`;
-        txt += `Mix-Readiness Score: ${r.mixReadinessScore}/100\n\n`;
-        txt += `EXECUTIVE SUMMARY:\n${r.executiveSummary}\n\n`;
-        txt += `RECOMMENDED ACTIONS:\n`;
-        r.recommendations.forEach((rec, idx) => {
-          txt += `${idx + 1}. [${rec.priority}] [${rec.action}] ${rec.title}\n`;
-          txt += `   Evidence: ${rec.evidence}\n`;
-          txt += `   Action: ${rec.actionAdvice}\n\n`;
-        });
-        txt += `FABFILTER PRO-Q 4 EQ PLAN:\n`;
-        r.eqPlan.forEach((b, idx) => {
-          txt += `Band ${idx + 1}: ${fmtFreq(b.frequency)} | ${b.type.toUpperCase()} | ${fmtDb(b.gain)} | Q=${b.q} | ${b.mode.toUpperCase()}\n`;
-          txt += `  Reason: ${b.reason}\n`;
-        });
-        downloadFile(txt, `MixLens_${r.file.name}_Summary.txt`, 'text/plain');
+        const safeName = String((r.file && r.file.name) || 'vocal').replace(/[^\w.\-]+/g, '_');
+        downloadFile(getFullReportText(), `MixLens_${safeName}_Full_Report.txt`, 'text/plain');
+      });
+    }
+
+    const cpTextBtn = $('copyTextReportBtn');
+    if (cpTextBtn) {
+      cpTextBtn.addEventListener('click', () => {
+        if (!currentAnalysisResult) return;
+        navigator.clipboard.writeText(getFullReportText());
+        alert('Complete vocal report copied to clipboard.');
       });
     }
   }

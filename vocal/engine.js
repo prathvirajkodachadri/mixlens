@@ -6,7 +6,7 @@
  * LPC Formants -> 16-Band Tonal Balance -> Resonance Discrimination ->
  * Dynamic Spectral Tiers -> EBU R128 Dynamics -> Time Events (Sibilance/Plosives/Breaths) ->
  * Recording Health -> Vocal Character -> Stereo/Phase -> Decision Engine ->
- * Report -> JSON -> FabFilter Pro-Q 4 Preset
+ * Report -> JSON -> Complete Detailed Vocal Report
  */
 
 (function(root, factory) {
@@ -15,7 +15,7 @@
       './dsp', './health', './spectrum', './pitch', './formants',
       './tonal', './resonances', './dynamic-spectral', './dynamics',
       './events', './character', './stereo', './masking', './reference',
-      './decision', './proq'
+      './decision', './report'
     ], factory);
   } else if (typeof module === 'object' && module.exports) {
     module.exports = factory(
@@ -34,7 +34,7 @@
       require('./masking'),
       require('./reference'),
       require('./decision'),
-      require('./proq')
+      require('./report')
     );
   } else {
     root.VocalEngine = factory(
@@ -53,13 +53,13 @@
       root.VocalMasking,
       root.VocalReference,
       root.VocalDecision,
-      root.VocalProQ
+      root.VocalReport
     );
   }
 }(typeof self !== 'undefined' ? self : this, function(
   DSP, Health, Spectrum, Pitch, Formants, Tonal, Resonances,
   DynamicSpectral, Dynamics, Events, Character, Stereo, Masking,
-  Reference, Decision, ProQ
+  Reference, Decision, Report
 ) {
 
   const tick = () => new Promise(r => setTimeout(r, 0));
@@ -212,11 +212,9 @@
       mixMasking: mixMaskingResult
     });
 
-    // 16. FabFilter Pro-Q 4 Preset Model
-    onProgress({ stage: 'FabFilter Pro-Q 4 Preset Model', percent: 97 });
+    // 16. Assemble complete vocal report (no VST preset)
+    onProgress({ stage: 'Building Complete Vocal Report', percent: 97 });
     await tick();
-    const proQ4Preset = ProQ.generateProQ4Preset(decisionResult.eqPlan, fileMeta);
-    const proQ4Xml = ProQ.buildProQ4PresetFile(proQ4Preset);
 
     // 17. Assemble Machine-Readable Export JSON
     const reportJson = {
@@ -253,6 +251,7 @@
         classification: characterResult.classification,
         zones: tonalResult.zones
       },
+      proximity: characterResult.proximity,
       resonances: resonancesResult.resonances,
       dynamicSpectral: {
         findings: dynamicSpectralResult.findings,
@@ -277,17 +276,19 @@
       referenceCompare: referenceResult,
       recommendations: decisionResult.recommendations,
       eqPlan: decisionResult.eqPlan,
-      proQ4Preset,
       processingChain: decisionResult.processingChain
     };
+
+    const detailedTextReport = Report.buildDetailedTextReport(reportJson);
+    const detailedHtmlReport = Report.buildDetailedHtmlReport(reportJson);
 
     onProgress({ stage: 'Analysis Complete', percent: 100 });
     await tick();
 
     return {
       reportJson,
-      proQ4Preset,
-      proQ4Xml,
+      detailedTextReport,
+      detailedHtmlReport,
       // Raw DSP outputs for visualizations
       raw: {
         mono,

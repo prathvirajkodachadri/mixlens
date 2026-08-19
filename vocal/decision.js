@@ -592,7 +592,7 @@
       return b.severity - a.severity;
     });
 
-    // Limit EQ bands to 3–8 meaningful, prioritized bands (FabFilter Pro-Q style)
+    // Limit EQ bands to 3–8 meaningful, prioritized bands
     eqBands.sort((a, b) => {
       const pDiff = PRIORITY_WEIGHTS[b.priority] - PRIORITY_WEIGHTS[a.priority];
       if (pDiff !== 0) return pDiff;
@@ -632,14 +632,14 @@
         name: 'Dynamic EQ (Harshness / Proximity)',
         status: finalEqPlan.some(b => b.mode === 'dynamic') ? 'Active' : 'Bypass',
         action: finalEqPlan.some(b => b.mode === 'dynamic') ? 'Tame level-dependent harshness during loud belting notes' : 'Transparent (No dynamic excess)',
-        pluginType: 'Dynamic EQ (FabFilter Pro-Q 4)'
+        pluginType: 'Dynamic EQ'
       },
       {
         stage: 5,
         name: 'De-Essing (Targeted Sibilance Control)',
         status: events.sibilance.action !== 'NONE' ? 'Active' : 'Optional',
         action: `Split-band de-essing centered @ ${fmtFreq(events.sibilance.dominantFrequency || 7200)}`,
-        pluginType: 'De-Esser (FabFilter Pro-DS)'
+        pluginType: 'De-Esser'
       },
       {
         stage: 6,

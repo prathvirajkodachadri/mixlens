@@ -102,7 +102,7 @@ const mockDoc = {
   },
   querySelectorAll(sel) {
     if (sel === '.v-tab-btn') {
-      const tabs = ['tab-overview', 'tab-spectrum', 'tab-spectrogram', 'tab-timeline', 'tab-tonal', 'tab-resonances', 'tab-dynamics', 'tab-sibilance', 'tab-plosives', 'tab-breath', 'tab-pitch', 'tab-health', 'tab-masking', 'tab-reference', 'tab-recommendations', 'tab-eqplan', 'tab-json'];
+      const tabs = ['tab-report', 'tab-overview', 'tab-spectrum', 'tab-spectrogram', 'tab-timeline', 'tab-tonal', 'tab-resonances', 'tab-dynamics', 'tab-sibilance', 'tab-plosives', 'tab-breath', 'tab-pitch', 'tab-health', 'tab-masking', 'tab-reference', 'tab-recommendations', 'tab-eqplan', 'tab-json'];
       return tabs.map(t => {
         const el = createMockElement('button', 'btn_' + t);
         el.setAttribute('data-tab', t);
@@ -110,7 +110,7 @@ const mockDoc = {
       });
     }
     if (sel === '.v-tab-content') {
-      const tabs = ['tab-overview', 'tab-spectrum', 'tab-spectrogram', 'tab-timeline', 'tab-tonal', 'tab-resonances', 'tab-dynamics', 'tab-sibilance', 'tab-plosives', 'tab-breath', 'tab-pitch', 'tab-health', 'tab-masking', 'tab-reference', 'tab-recommendations', 'tab-eqplan', 'tab-json'];
+      const tabs = ['tab-report', 'tab-overview', 'tab-spectrum', 'tab-spectrogram', 'tab-timeline', 'tab-tonal', 'tab-resonances', 'tab-dynamics', 'tab-sibilance', 'tab-plosives', 'tab-breath', 'tab-pitch', 'tab-health', 'tab-masking', 'tab-reference', 'tab-recommendations', 'tab-eqplan', 'tab-json'];
       return tabs.map(t => createMockElement('div', t));
     }
     return [];
@@ -183,7 +183,7 @@ const scripts = [
   'vocal/masking.js',
   'vocal/reference.js',
   'vocal/decision.js',
-  'vocal/proq.js',
+  'vocal/report.js',
   'vocal/engine.js',
   'vocal/ui.js'
 ];
@@ -236,6 +236,13 @@ for (const s of scripts) {
     process.exit(1);
   }
   console.log('JSON Viewer populated with', jsonViewer.textContent.length, 'characters of JSON.');
+
+  const fullReport = mockElements['fullReportViewer'];
+  if (!fullReport || !fullReport.innerHTML || !fullReport.innerHTML.includes('Complete Vocal Analysis Report')) {
+    console.error('FAIL: full vocal report was not rendered');
+    process.exit(1);
+  }
+  console.log('Full report rendered with', fullReport.innerHTML.length, 'characters of HTML.');
 
   console.log('✅ UI Simulation Test Passed Successfully!');
   process.exit(0);
