@@ -3,216 +3,216 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MixLens — Professional Vocal Analysis Engine</title>
-<link rel="stylesheet" href="style.css?v=2.0.1">
-<link rel="stylesheet" href="vocal.css?v=2.0.1">
+<title>MixLens — Vocal Engine 3.0</title>
+<meta name="description" content="MixLens Vocal Engine 3.0 — professional, evidence-based local DSP vocal analysis and report generator. Your audio stays on your device.">
+<link rel="stylesheet" href="style.css?v=3.0.0">
+<link rel="stylesheet" href="vocal.css?v=3.0.0">
 </head>
-<body>
+<body class="ve3-body">
 
-<!-- HEADER & NAVIGATION -->
+<a class="skip-link" href="#mainContent">Skip to content</a>
+
 <header>
   <div class="brand">
-    <div class="logo">◉</div>
+    <div class="logo" aria-hidden="true">◉</div>
     <div>
-      <h1>MixLens <span class="ver">v2.0.1</span></h1>
-      <p class="tagline">Professional Vocal Analysis Engine — Upload a vocal. Get a complete, evidence-based engineering report.</p>
+      <h1>MIXLENS <span class="ver">Vocal Engine 3.0</span></h1>
+      <p class="tagline">Professional Vocal Analysis &amp; Report Generator · Evidence-Based Local DSP Analysis</p>
     </div>
   </div>
   <div class="header-controls">
-    <nav class="nav-pills">
-      <a class="nav-pill active" href="index.html">🎙 Vocal Engine</a>
+    <div class="engine-status" title="All analysis runs in this browser">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>LOCAL DSP ENGINE</span>
+    </div>
+    <nav class="nav-pills" aria-label="MixLens applications">
+      <a class="nav-pill active" href="index.html" aria-current="page">🎙 Vocal Engine</a>
       <a class="nav-pill" href="analyzer.html">📊 Mix Analyzer</a>
       <a class="nav-pill" href="vox.html">🎛 VoxLens Chain</a>
     </nav>
   </div>
 </header>
 
-<main>
-  <!-- HERO SECTION -->
-  <section class="hero-vocal">
-    <div class="hero-badge">AI-Assisted Vocal Engineering</div>
-    <h2 class="hero-title">Professional Vocal Analysis Engine</h2>
+<main id="mainContent">
+  <section class="hero-vocal" aria-labelledby="heroTitle">
+    <div class="hero-badge">100% LOCAL DSP ANALYSIS</div>
+    <h2 id="heroTitle" class="hero-title">Vocal Engine 3.0</h2>
     <p class="hero-sub">
-      Analyze your vocal. Understand every problem. Read a complete engineering report.<br>
-      High-precision offline DSP measures recording health, F0 pitch, formants, resonances, dynamic harshness, sibilance, plosives, loudness, and stereo/phase — then writes a full, evidence-based vocal report. No VST presets.
+      A measurement and diagnostic instrument for vocals.<br>
+      Decode locally. Measure frequency, dynamics, pitch, noise, and artifacts.
+      Separate <strong>measurement</strong>, <strong>detection</strong>, <strong>evidence</strong>, and <strong>engineering observation</strong>.
     </p>
+    <p class="privacy-line">Your audio stays on your device. No cloud processing. No AI API.</p>
 
-    <div class="hero-actions">
-      <button id="primaryAnalyzeBtn" class="btn accent" onclick="$('vocalFileInput').click()" style="padding:10px 22px;font-size:14px;font-weight:600">
-        🎙 Analyze Vocal
-      </button>
-      <button id="loadDemoBtn" class="btn ghost" style="padding:10px 18px;font-size:13px">
-        ▶ Load Demo Vocal
-      </button>
-    </div>
-
-    <!-- DROP ZONE -->
-    <div id="vocalDropZone" class="dropzone-vocal">
-      <div class="dz-icon-vocal">⬇</div>
-      <p><strong>Drop your vocal recording here</strong> or click to browse</p>
-      <p class="dz-sub" style="color:var(--v-text-muted);font-size:12px;margin-top:4px">
-        🔒 Analyzed 100% locally in your browser. Audio never leaves your computer.
-      </p>
+    <div id="vocalDropZone" class="dropzone-vocal" tabindex="0" role="button" aria-label="Drop vocal file or browse">
+      <div class="dz-icon-vocal" aria-hidden="true">⬇</div>
+      <p><strong>DROP VOCAL FILE</strong></p>
+      <p class="dz-sub">WAV · FLAC · MP3 · AIFF · OGG · M4A/AAC where the browser can decode it</p>
+      <p class="dz-sub">Your audio stays on this device.</p>
       <div class="dz-formats">
         <span class="dz-format-badge">WAV</span>
-        <span class="dz-format-badge">MP3</span>
         <span class="dz-format-badge">FLAC</span>
-        <span class="dz-format-badge">M4A / AAC</span>
-        <span class="dz-format-badge">OGG</span>
+        <span class="dz-format-badge">MP3</span>
         <span class="dz-format-badge">AIFF</span>
+        <span class="dz-format-badge">OGG</span>
+        <span class="dz-format-badge">M4A / AAC</span>
       </div>
-      <input type="file" id="vocalFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff" hidden>
+      <div class="hero-actions" style="margin-top:16px">
+        <button type="button" id="browseFileBtn" class="btn accent">Browse File</button>
+        <button type="button" id="loadDemoBtn" class="btn ghost">Load Demo</button>
+      </div>
+      <input type="file" id="vocalFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.aac,.ogg,.aiff,.aif" hidden>
     </div>
   </section>
 
-  <!-- PROGRESS BAR -->
-  <section id="vocalProgressWrap" class="panel hidden">
+  <section id="vocalProgressWrap" class="panel hidden" aria-live="polite">
     <div class="progress-label">
-      <span id="vocalProgressLabel">Initializing DSP Pipeline…</span>
+      <span id="vocalProgressLabel">Starting local analysis…</span>
       <span id="vocalProgressPct">0%</span>
     </div>
-    <div class="progress-bar">
-      <div id="vocalProgressFill" style="width:0%;"></div>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="vocalProgressBar">
+      <div id="vocalProgressFill"></div>
     </div>
+    <ol id="progressChecklist" class="progress-checklist"></ol>
   </section>
 
-  <!-- DASHBOARD / RESULTS -->
-  <div id="vocalDashboard" class="hidden">
+  <p id="analysisError" class="analysis-error hidden" role="alert"></p>
 
-    <!-- FILE INFO & AUDIO TRANSPORT -->
+  <div id="vocalDashboard" class="hidden">
+    <div id="demoBanner" class="demo-banner hidden" role="status">DEMO DATA — generated and analyzed locally. Not mixed with a user upload.</div>
+
     <section class="panel file-panel">
       <div>
         <span id="vocalFileName" class="fname">—</span>
         <span id="vocalFileMeta" class="fmeta">—</span>
+        <div id="fileMetaGrid" class="file-meta-grid"></div>
       </div>
-      <div class="transport">
-        <button id="vocalPlayBtn" class="btn accent">▶ Play</button>
-        <button id="vocalStopBtn" class="btn ghost">■ Stop</button>
-        <span id="vocalTimeLabel" style="font-family:var(--v-mono);font-size:12.5px;color:var(--v-text-dim)">0:00.0 / 0:00.0</span>
-        <button id="downloadTextReportBtn" class="btn accent" title="Download the complete vocal analysis report (.txt)">⤓ Full Report</button>
-        <button id="copyTextReportBtn" class="btn ghost" title="Copy the complete report to clipboard">📋 Copy Report</button>
+      <div class="export-row">
+        <button type="button" id="exportJsonBtn" class="btn accent">Export JSON</button>
+        <button type="button" id="exportTxtBtn" class="btn ghost">Export TXT</button>
+        <button type="button" id="exportPdfBtn" class="btn ghost">Export PDF</button>
+        <button type="button" id="copyReportBtn" class="btn ghost">Copy Report</button>
       </div>
     </section>
 
-    <!-- EXECUTIVE SUMMARY & MIX-READINESS -->
+    <section class="player-bar" aria-label="Audio player">
+      <button type="button" id="vocalPlayBtn" class="btn accent" aria-label="Play">Play</button>
+      <button type="button" id="vocalPauseBtn" class="btn ghost" aria-label="Pause">Pause</button>
+      <button type="button" id="vocalStopBtn" class="btn ghost" aria-label="Stop">Stop</button>
+      <input type="range" id="vocalSeek" min="0" max="1000" value="0" aria-label="Seek">
+      <span id="vocalTimeLabel" class="time-label">0:00.00 / 0:00.00</span>
+      <label class="vol-wrap">
+        <span>Vol</span>
+        <input type="range" id="vocalVolume" min="0" max="100" value="90" aria-label="Volume">
+      </label>
+      <label class="vol-wrap">
+        <span>Speed</span>
+        <select id="vocalSpeed" aria-label="Playback speed">
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="dash-cards" aria-label="Top-level measurements">
+      <article class="dash-card" id="cardMix"><div class="dash-k">Mix-Readiness</div><div class="dash-v" id="dashMix">—</div><div class="dash-s">Technical readiness only</div></article>
+      <article class="dash-card" id="cardHealth"><div class="dash-k">Recording Health</div><div class="dash-v" id="dashHealth">—</div><div class="dash-s">Explainable 0–100</div></article>
+      <article class="dash-card" id="cardNoise"><div class="dash-k">Noise</div><div class="dash-v" id="dashNoise">—</div><div class="dash-s">Quiet-region floor</div></article>
+      <article class="dash-card" id="cardDyn"><div class="dash-k">Dynamics</div><div class="dash-v" id="dashDyn">—</div><div class="dash-s">Level variation</div></article>
+      <article class="dash-card" id="cardSib"><div class="dash-k">Sibilance</div><div class="dash-v" id="dashSib">—</div><div class="dash-s">4–12 kHz events</div></article>
+      <article class="dash-card" id="cardClip"><div class="dash-k">Clipping</div><div class="dash-v" id="dashClip">—</div><div class="dash-s">Full-scale evidence</div></article>
+      <article class="dash-card" id="cardPhase"><div class="dash-k">Phase</div><div class="dash-v" id="dashPhase">—</div><div class="dash-s">Correlation</div></article>
+      <article class="dash-card" id="cardHead"><div class="dash-k">Headroom</div><div class="dash-v" id="dashHead">—</div><div class="dash-s">Below 0 dBFS</div></article>
+    </section>
+
     <section class="exec-summary-card">
       <div class="exec-summary-head">
-        <span class="exec-title">Executive Vocal Summary</span>
+        <span class="exec-title">Executive Summary</span>
         <div class="exec-score-badge">
-          <span style="font-size:11.5px;text-transform:uppercase;color:var(--v-text-dim)">Mix-Readiness Estimate:</span>
-          <span id="overviewScoreVal" class="exec-score-val">--</span>
+          <span>Local DSP · no AI</span>
         </div>
       </div>
-      <p id="overviewSummaryText" class="exec-text">Analyzing vocal recording…</p>
+      <p id="overviewSummaryText" class="exec-text">Waiting for analysis…</p>
+      <ul id="execFindings" class="rpt-bullets"></ul>
     </section>
 
-    <!-- NAVIGATION TABS -->
     <div class="vocal-tabs-wrap">
-      <div class="vocal-tabs">
-        <button class="v-tab-btn active" data-tab="tab-report">Full Report</button>
-        <button class="v-tab-btn" data-tab="tab-overview">Overview</button>
-        <button class="v-tab-btn" data-tab="tab-spectrum">Spectrum <span class="v-tab-badge">20–20k</span></button>
-        <button class="v-tab-btn" data-tab="tab-spectrogram">Spectrogram <span class="v-tab-badge">Heatmap</span></button>
-        <button class="v-tab-btn" data-tab="tab-timeline">Timeline <span class="v-tab-badge">Events</span></button>
-        <button class="v-tab-btn" data-tab="tab-tonal">Tonal Balance <span class="v-tab-badge">16 Zones</span></button>
-        <button class="v-tab-btn" data-tab="tab-resonances">Resonances</button>
-        <button class="v-tab-btn" data-tab="tab-dynamics">Dynamics &amp; Comp</button>
-        <button class="v-tab-btn" data-tab="tab-sibilance">Sibilance</button>
-        <button class="v-tab-btn" data-tab="tab-plosives">Plosives</button>
-        <button class="v-tab-btn" data-tab="tab-breath">Breaths</button>
-        <button class="v-tab-btn" data-tab="tab-pitch">Pitch &amp; Vibrato</button>
-        <button class="v-tab-btn" data-tab="tab-health">Recording Health</button>
-        <button class="v-tab-btn" data-tab="tab-masking">Mix Masking</button>
-        <button class="v-tab-btn" data-tab="tab-reference">Reference Compare</button>
-        <button class="v-tab-btn" data-tab="tab-recommendations">Recommendations</button>
-        <button class="v-tab-btn" data-tab="tab-eqplan">EQ Plan</button>
-        <button class="v-tab-btn" data-tab="tab-json">JSON</button>
+      <div class="vocal-tabs" role="tablist" aria-label="Analysis views">
+        <button type="button" class="v-tab-btn active" role="tab" aria-selected="true" data-tab="tab-report">Report</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-spectrum">Spectrum</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-spectrogram">Spectrogram</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-timeline">Timeline</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-tonal">Tonal 16</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-resonances">Resonance</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-loudness">Loudness</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-events">Events</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-pitch">Pitch</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-health">Health</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-character">Character</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-compare">Compare</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-json">JSON</button>
       </div>
     </div>
 
-    <!-- TAB 0: COMPLETE DETAILED REPORT -->
-    <div id="tab-report" class="v-tab-content">
+    <div id="tab-report" class="v-tab-content" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">
-          Complete Vocal Analysis Report
-          <span class="hint">Every measured module, timestamp, and recommendation for this upload</span>
-        </div>
+        <div class="panel-title">MixLens Vocal Analysis Report <span class="hint">Measurement · Detection · Evidence · Observation</span></div>
         <div id="fullReportViewer" class="full-report-host">Waiting for a vocal upload…</div>
       </section>
     </div>
 
-    <!-- TAB 1: OVERVIEW -->
-    <div id="tab-overview" class="v-tab-content hidden">
-      <div class="panel">
-        <div class="panel-title">Vocal Character Profile <span class="hint">11-dimension acoustic radar</span></div>
-        <div id="overviewCharGrid" class="character-grid"></div>
-      </div>
-
-      <div class="panel" style="margin-top:14px">
-        <div class="panel-title">Top Priority Engineering Recommendations</div>
-        <div id="overviewTopRecs" class="rec-list"></div>
-      </div>
-    </div>
-
-    <!-- TAB 2: SPECTRUM -->
-    <div id="tab-spectrum" class="v-tab-content hidden">
+    <div id="tab-spectrum" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
         <div class="panel-title">
-          Interactive High-Resolution Spectrum
-          <span class="hint">Logarithmic 20 Hz – 20 kHz · Solid: Average · Dash: 90th Pct · Yellow: Suggested EQ Curve</span>
+          Interactive Frequency Spectrum
+          <span class="hint">20 Hz → 20 kHz logarithmic · average / median / 10–90th percentile</span>
+        </div>
+        <div class="chart-toolbar">
+          <button type="button" id="specZoomOut" class="btn ghost small-btn">Reset zoom</button>
+          <span class="hint">Drag to zoom · hover for frequency and dB</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="spectrumCanvas" class="canvas-plot"></canvas>
+          <canvas id="spectrumCanvas" class="canvas-plot" aria-label="Frequency spectrum"></canvas>
           <div id="spectrumTooltip" class="canvas-tooltip"></div>
-          <span class="canvas-overlay-hint">Hover to inspect frequency · Yellow line shows proposed EQ plan</span>
+          <span class="canvas-overlay-hint">Solid average · dashed median · band 10–90</span>
         </div>
+        <p id="spectrumDesc" class="chart-desc"></p>
       </section>
     </div>
 
-    <!-- TAB 3: SPECTROGRAM -->
-    <div id="tab-spectrogram" class="v-tab-content hidden">
+    <div id="tab-spectrogram" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">
-          Time vs Frequency Spectrogram Heatmap
-          <span class="hint">Click anywhere to seek audio</span>
-        </div>
+        <div class="panel-title">Spectrogram <span class="hint">Time vs log frequency · click to seek</span></div>
         <div class="canvas-wrap">
-          <canvas id="spectrogramCanvas" class="canvas-plot"></canvas>
-          <span class="canvas-overlay-hint">Magma palette · Overlaid red/orange pins show sibilance &amp; plosives</span>
+          <canvas id="spectrogramCanvas" class="canvas-plot" aria-label="Spectrogram"></canvas>
         </div>
+        <p class="chart-desc">Magnitude in dBFS. This is measured STFT energy, not a decorative heatmap.</p>
       </section>
     </div>
 
-    <!-- TAB 4: TIMELINE -->
-    <div id="tab-timeline" class="v-tab-content hidden">
+    <div id="tab-timeline" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">
-          Synchronized Vocal Event Timeline
-          <span class="hint">Click waveform or event chips to seek playback</span>
-        </div>
+        <div class="panel-title">Temporal Event Timeline <span class="hint">Waveform + detections · click to seek</span></div>
         <div class="canvas-wrap">
-          <canvas id="timelineCanvas" class="canvas-plot" style="height:140px"></canvas>
+          <canvas id="timelineCanvas" class="canvas-plot" style="height:150px" aria-label="Event timeline"></canvas>
         </div>
-        <div class="panel-title" style="margin-top:14px">Detected Event Markers</div>
         <div id="timelineEventsList" class="event-chips-list"></div>
       </section>
     </div>
 
-    <!-- TAB 5: TONAL BALANCE -->
-    <div id="tab-tonal" class="v-tab-content hidden">
+    <div id="tab-tonal" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">Complete 16-Zone Vocal Tonal Breakdown</div>
+        <div class="panel-title">16-Zone Tonal Analysis <span class="hint">Measurement — not an EQ recommendation</span></div>
+        <div class="canvas-wrap">
+          <canvas id="tonalCanvas" class="canvas-plot" style="height:220px" aria-label="Tonal balance"></canvas>
+        </div>
         <div class="v-table-wrap">
           <table class="v-table">
             <thead>
               <tr>
-                <th>Zone Name</th>
-                <th>Frequency</th>
-                <th>Measured Level</th>
-                <th>Deviation (dB)</th>
-                <th>Energy %</th>
-                <th>Status</th>
-                <th>Description</th>
+                <th>Zone</th><th>Range</th><th>Energy %</th><th>Median</th><th>Deviation</th><th>Status</th>
               </tr>
             </thead>
             <tbody id="tonalTableBody"></tbody>
@@ -221,25 +221,17 @@
       </section>
     </div>
 
-    <!-- TAB 6: RESONANCES -->
-    <div id="tab-resonances" class="v-tab-content hidden">
+    <div id="tab-resonances" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">
-          Resonance Discrimination Inspector
-          <span class="hint">Distinguishes natural musical pitch harmonics from stationary room/mic resonances</span>
+        <div class="panel-title">Resonance Map <span class="hint">Prominence, Q, persistence, harmonic relationship</span></div>
+        <div class="canvas-wrap">
+          <canvas id="resonanceCanvas" class="canvas-plot" style="height:200px" aria-label="Resonance map"></canvas>
         </div>
         <div class="v-table-wrap">
           <table class="v-table">
             <thead>
               <tr>
-                <th>Frequency</th>
-                <th>Note</th>
-                <th>Q Bandwidth</th>
-                <th>Excess Above Baseline</th>
-                <th>Persistence</th>
-                <th>Classification</th>
-                <th>Action</th>
-                <th>Engineering Evidence</th>
+                <th>#</th><th>Frequency</th><th>Excess</th><th>Bandwidth</th><th>Q</th><th>Persist</th><th>Conf</th><th>Classification</th>
               </tr>
             </thead>
             <tbody id="resonancesTableBody"></tbody>
@@ -248,254 +240,177 @@
       </section>
     </div>
 
-    <!-- TAB 7: DYNAMICS & COMPRESSION -->
-    <div id="tab-dynamics" class="v-tab-content hidden">
+    <div id="tab-loudness" class="v-tab-content hidden" role="tabpanel">
       <div class="grid-2">
         <section class="panel">
-          <div class="panel-title">Loudness &amp; Dynamic Metrics</div>
+          <div class="panel-title">Loudness (EBU R128 / ITU-R BS.1770-4)</div>
           <div class="meter-grid">
-            <div class="meter-card hero">
-              <div class="meter-label">Integrated Loudness</div>
-              <div class="meter-value" id="dynIntegratedLufs">—</div>
-            </div>
-            <div class="meter-card">
-              <div class="meter-label">Loudness Range (LRA)</div>
-              <div class="meter-value" id="dynLra">—</div>
-            </div>
-            <div class="meter-card">
-              <div class="meter-label">Crest Factor</div>
-              <div class="meter-value" id="dynCrest">—</div>
-            </div>
+            <div class="meter-card hero"><div class="meter-label">Integrated</div><div class="meter-value" id="dynIntegratedLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">Short-term max</div><div class="meter-value" id="dynShortLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">Momentary max</div><div class="meter-value" id="dynMomLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">LRA</div><div class="meter-value" id="dynLra">—</div></div>
+            <div class="meter-card"><div class="meter-label">True Peak</div><div class="meter-value" id="dynTp">—</div></div>
+            <div class="meter-card"><div class="meter-label">Crest</div><div class="meter-value" id="dynCrest">—</div></div>
           </div>
         </section>
-
         <section class="panel">
-          <div class="panel-title">Compression Recommendation</div>
-          <div id="dynCompStyle" style="font-size:15px;font-weight:600;color:var(--v-amber-bright);margin-bottom:8px">—</div>
-          <div id="dynPlanBox" class="rec-evidence"></div>
+          <div class="panel-title">Dynamics</div>
+          <div id="dynEvidence" class="rec-evidence"></div>
         </section>
       </div>
-    </div>
-
-    <!-- TAB 8: SIBILANCE -->
-    <div id="tab-sibilance" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Sibilance &amp; De-Essing Lab</div>
-        <div class="meter-grid" style="margin-bottom:14px">
-          <div class="meter-card">
-            <div class="meter-label">Dominant Sibilance Freq</div>
-            <div class="meter-value" id="sibDomFreq">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Detected 'S' Events</div>
-            <div class="meter-value" id="sibCount">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Severity Verdict</div>
-            <div class="meter-value" id="sibVerdict">—</div>
-          </div>
+      <section class="panel" style="margin-top:14px">
+        <div class="panel-title">Loudness Timeline <span class="hint">Short-term LUFS</span></div>
+        <div class="canvas-wrap">
+          <canvas id="loudnessCanvas" class="canvas-plot" style="height:180px" aria-label="Loudness timeline"></canvas>
         </div>
-        <div id="sibAdvice" class="rec-body" style="font-weight:500;margin-bottom:12px"></div>
-        <div class="panel-title">Detected Sibilant Events (Click to Listen)</div>
-        <div id="sibEventsList" class="event-chips-list"></div>
       </section>
     </div>
 
-    <!-- TAB 9: PLOSIVES -->
-    <div id="tab-plosives" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Plosive &amp; Wind Blast Analysis (P/B Consonants)</div>
-        <div class="meter-grid" style="margin-bottom:14px">
-          <div class="meter-card">
-            <div class="meter-label">Plosive Bursts Count</div>
-            <div class="meter-value" id="ploCount">—</div>
+    <div id="tab-events" class="v-tab-content hidden" role="tabpanel">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-title">Sibilance</div>
+          <div class="meter-grid">
+            <div class="meter-card"><div class="meter-label">Events</div><div class="meter-value" id="sibCount">—</div></div>
+            <div class="meter-card"><div class="meter-label">Dominant</div><div class="meter-value small" id="sibDomFreq">—</div></div>
+            <div class="meter-card"><div class="meter-label">Severity</div><div class="meter-value" id="sibVerdict">—</div></div>
           </div>
-          <div class="meter-card">
-            <div class="meter-label">Severity Level</div>
-            <div class="meter-value" id="ploVerdict">—</div>
+          <p id="sibAdvice" class="rec-body"></p>
+          <div id="sibEventsList" class="event-chips-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">Plosives</div>
+          <div class="meter-grid">
+            <div class="meter-card"><div class="meter-label">Events</div><div class="meter-value" id="ploCount">—</div></div>
+            <div class="meter-card"><div class="meter-label">Strong</div><div class="meter-value" id="ploStrong">—</div></div>
           </div>
+          <p id="ploAdvice" class="rec-body"></p>
+          <div id="ploEventsList" class="event-chips-list"></div>
+        </section>
+      </div>
+      <section class="panel" style="margin-top:14px">
+        <div class="panel-title">Breaths</div>
+        <div class="meter-grid">
+          <div class="meter-card"><div class="meter-label">Count</div><div class="meter-value" id="breathCount">—</div></div>
+          <div class="meter-card"><div class="meter-label">Average duration</div><div class="meter-value small" id="breathAvg">—</div></div>
+          <div class="meter-card"><div class="meter-label">Strong</div><div class="meter-value" id="breathStrong">—</div></div>
         </div>
-        <div id="ploAdvice" class="rec-body" style="font-weight:500;margin-bottom:12px"></div>
-        <div class="panel-title">Detected Plosive Bursts (Click to Listen)</div>
-        <div id="ploEventsList" class="event-chips-list"></div>
-      </section>
-    </div>
-
-    <!-- TAB 10: BREATH -->
-    <div id="tab-breath" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Breath Inhalation Analysis</div>
-        <div class="meter-grid" style="margin-bottom:14px">
-          <div class="meter-card">
-            <div class="meter-label">Breaths Count</div>
-            <div class="meter-value" id="breathCount">—</div>
-          </div>
-        </div>
-        <div id="breathAdvice" class="rec-body" style="font-weight:500;margin-bottom:12px"></div>
-        <div class="panel-title">Detected Breath Intervals (Click to Listen)</div>
+        <p id="breathAdvice" class="rec-body"></p>
         <div id="breathEventsList" class="event-chips-list"></div>
       </section>
     </div>
 
-    <!-- TAB 11: PITCH & VIBRATO -->
-    <div id="tab-pitch" class="v-tab-content hidden">
+    <div id="tab-pitch" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">Vocal Fundamental Pitch (F0) &amp; Vibrato Intonation</div>
-        <div class="meter-grid" style="margin-bottom:14px">
-          <div class="meter-card">
-            <div class="meter-label">Median Pitch (F0)</div>
-            <div class="meter-value" id="pitchF0Val">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Primary Musical Note</div>
-            <div class="meter-value" id="pitchNoteVal">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Voiced Ratio</div>
-            <div class="meter-value" id="pitchVoicedPct">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Vibrato Rate &amp; Depth</div>
-            <div class="meter-value small" id="pitchVibratoVal">—</div>
-          </div>
-        </div>
-        <div class="canvas-wrap">
-          <canvas id="pitchCanvas" class="canvas-plot" style="height:200px"></canvas>
-          <span class="canvas-overlay-hint">YIN Pitch Contour over Time with Musical Note Grid</span>
-        </div>
-      </section>
-    </div>
-
-    <!-- TAB 12: RECORDING HEALTH -->
-    <div id="tab-health" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Recording Health &amp; Source Assessment</div>
+        <div class="panel-title">Observed Pitch Profile <span class="hint">Not a medical or biological voice-type claim</span></div>
         <div class="meter-grid">
-          <div class="meter-card">
-            <div class="meter-label">Health Score</div>
-            <div class="meter-value" id="healthScoreVal">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Clipping Samples</div>
-            <div class="meter-value small" id="healthClipVal">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Noise Floor &amp; SNR</div>
-            <div class="meter-value small" id="healthNoiseVal">—</div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-label">Mains Hum (50/60 Hz)</div>
-            <div class="meter-value small" id="healthHumVal">—</div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- TAB 13: MIX MASKING -->
-    <div id="tab-masking" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Vocal vs Instrumental Masking &amp; Collision Analysis</div>
-        <div id="maskingList" class="rec-list"></div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--v-panel-border)">
-          <label style="font-size:12px;text-transform:uppercase;color:var(--v-amber);font-weight:600;display:block;margin-bottom:8px">Upload Instrumental / Beat File:</label>
-          <input type="file" id="instFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg">
-        </div>
-      </section>
-    </div>
-
-    <!-- TAB 14: REFERENCE VOCAL -->
-    <div id="tab-reference" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Comparative Analysis vs Target Reference Vocal</div>
-        <div id="refCompareList" class="rec-list"></div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--v-panel-border)">
-          <label style="font-size:12px;text-transform:uppercase;color:var(--v-amber);font-weight:600;display:block;margin-bottom:8px">Upload Reference Vocal File:</label>
-          <input type="file" id="refFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg">
-        </div>
-      </section>
-    </div>
-
-    <!-- TAB 15: RECOMMENDATIONS -->
-    <div id="tab-recommendations" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">Complete Prioritized Mixing Action Center</div>
-        <div id="allRecsList" class="rec-list"></div>
-      </section>
-    </div>
-
-    <!-- TAB 16: EQ PLAN -->
-    <div id="tab-eqplan" class="v-tab-content hidden">
-      <section class="panel">
-        <div class="panel-title">
-          Suggested EQ / Filter Plan
-          <span class="hint">3–8 targeted bands from measured spectral data — plugin-agnostic, not a VST preset</span>
+          <div class="meter-card"><div class="meter-label">Median F0</div><div class="meter-value" id="pitchF0Val">—</div></div>
+          <div class="meter-card"><div class="meter-label">Primary center</div><div class="meter-value" id="pitchNoteVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Voiced ratio</div><div class="meter-value" id="pitchVoicedPct">—</div></div>
+          <div class="meter-card"><div class="meter-label">Vibrato</div><div class="meter-value small" id="pitchVibratoVal">—</div></div>
         </div>
         <div class="canvas-wrap">
-          <canvas id="eqCurveCanvas" class="canvas-plot" style="height:180px"></canvas>
-          <span class="canvas-overlay-hint">Total Filter Response Curve (dB vs Frequency)</span>
+          <canvas id="pitchCanvas" class="canvas-plot" style="height:220px" aria-label="F0 contour"></canvas>
+          <span class="canvas-overlay-hint">Time · Hz · note · cents</span>
         </div>
-
-        <div class="v-table-wrap" style="margin-top:14px">
-          <table class="v-table">
-            <thead>
-              <tr>
-                <th>Band</th>
-                <th>Frequency</th>
-                <th>Gain</th>
-                <th>Q</th>
-                <th>Shape</th>
-                <th>Mode</th>
-                <th>Reason</th>
-              </tr>
-            </thead>
-            <tbody id="eqPlanTableBody"></tbody>
-          </table>
-        </div>
-
+        <p id="pitchNote" class="chart-desc"></p>
       </section>
     </div>
 
-    <!-- TAB 17: JSON EXPORT -->
-    <div id="tab-json" class="v-tab-content hidden">
+    <div id="tab-health" class="v-tab-content hidden" role="tabpanel">
       <section class="panel">
-        <div class="panel-title">
-          Deterministic Machine-Readable JSON Export
-          <span class="hint">Ready for AI agents, external DAWs, and automated mastering engines</span>
+        <div class="panel-title">Recording Health &amp; Mix-Readiness</div>
+        <div class="meter-grid">
+          <div class="meter-card hero"><div class="meter-label">Health</div><div class="meter-value" id="healthScoreVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Mix-Readiness</div><div class="meter-value" id="mixScoreVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Clipping</div><div class="meter-value small" id="healthClipVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Noise / SNR</div><div class="meter-value small" id="healthNoiseVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Hum</div><div class="meter-value small" id="healthHumVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">DC</div><div class="meter-value small" id="healthDcVal">—</div></div>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <button id="copyJsonBtn" class="btn accent">📋 Copy JSON to Clipboard</button>
-          <button id="downloadJsonBtn" class="btn ghost">⤓ Download .json File</button>
+        <div id="healthExplain" class="rec-list" style="margin-top:14px"></div>
+        <div class="panel-title" style="margin-top:16px">Stereo / Phase</div>
+        <div id="phaseMeter" class="phase-meter" aria-label="Correlation meter">
+          <div class="phase-scale">+1<span>0</span>−1</div>
+          <div class="phase-track"><div id="phaseNeedle" class="phase-needle"></div></div>
+          <div id="phaseLabel" class="phase-label">—</div>
         </div>
+      </section>
+    </div>
+
+    <div id="tab-character" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Vocal Character Profile <span class="hint">Acoustic description from measured features — not AI analysis</span></div>
+        <div class="canvas-wrap">
+          <canvas id="radarCanvas" class="canvas-plot" style="height:320px" aria-label="Character radar"></canvas>
+        </div>
+        <div id="overviewCharGrid" class="character-grid"></div>
+      </section>
+    </div>
+
+    <div id="tab-compare" class="v-tab-content hidden" role="tabpanel">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-title">Reference Vocal <span class="hint">Relative differences only</span></div>
+          <p class="chart-desc">Optional second file. Reports spectral and loudness differences. Does not copy EQ.</p>
+          <label class="file-label">
+            <span>Reference vocal</span>
+            <input type="file" id="refFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff">
+          </label>
+          <div id="refCompareList" class="rec-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">Vocal / Instrumental Masking <span class="hint">Possible collisions</span></div>
+          <p class="chart-desc">Optional instrumental. Shows regions where instrumental energy exceeds the vocal.</p>
+          <label class="file-label">
+            <span>Instrumental / bed</span>
+            <input type="file" id="instFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff">
+          </label>
+          <div id="maskingList" class="rec-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="tab-json" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Machine-readable JSON <span class="hint">schema_version 3.0 · engine_version 3.0.0</span></div>
         <div id="reportJsonViewer" class="json-box"></div>
       </section>
     </div>
-
   </div>
 </main>
 
 <footer>
-  MixLens Vocal Analysis Engine — Professional Audio Mixing &amp; DSP Toolkit · 100% Client-Side · MIT License
+  MixLens Vocal Engine 3.0 — 100% local DSP analysis · Your audio stays on your device · MIT License
 </footer>
 
-<!-- MODULAR JAVASCRIPT LIBRARIES (versioned to defeat stale browser caches) -->
-<script src="vocal/dsp.js?v=2.0.1"></script>
-<script src="vocal/health.js?v=2.0.1"></script>
-<script src="vocal/spectrum.js?v=2.0.1"></script>
-<script src="vocal/pitch.js?v=2.0.1"></script>
-<script src="vocal/formants.js?v=2.0.1"></script>
-<script src="vocal/tonal.js?v=2.0.1"></script>
-<script src="vocal/resonances.js?v=2.0.1"></script>
-<script src="vocal/dynamic-spectral.js?v=2.0.1"></script>
-<script src="vocal/dynamics.js?v=2.0.1"></script>
-<script src="vocal/events.js?v=2.0.1"></script>
-<script src="vocal/character.js?v=2.0.1"></script>
-<script src="vocal/stereo.js?v=2.0.1"></script>
-<script src="vocal/masking.js?v=2.0.1"></script>
-<script src="vocal/reference.js?v=2.0.1"></script>
-<script src="vocal/decision.js?v=2.0.1"></script>
-<script src="vocal/report.js?v=2.0.1"></script>
-<script src="vocal/engine.js?v=2.0.1"></script>
-<script src="vocal/ui.js?v=2.0.1"></script>
-
+<script src="js/vocal-engine/utilities.js?v=3.0.0"></script>
+<script src="js/vocal-engine/fft.js?v=3.0.0"></script>
+<script src="js/vocal-engine/stft.js?v=3.0.0"></script>
+<script src="js/vocal-engine/preprocessing.js?v=3.0.0"></script>
+<script src="js/vocal-engine/clipping.js?v=3.0.0"></script>
+<script src="js/vocal-engine/loudness.js?v=3.0.0"></script>
+<script src="js/vocal-engine/dynamics.js?v=3.0.0"></script>
+<script src="js/vocal-engine/spectrum.js?v=3.0.0"></script>
+<script src="js/vocal-engine/tonal-balance.js?v=3.0.0"></script>
+<script src="js/vocal-engine/resonance.js?v=3.0.0"></script>
+<script src="js/vocal-engine/sibilance.js?v=3.0.0"></script>
+<script src="js/vocal-engine/plosive.js?v=3.0.0"></script>
+<script src="js/vocal-engine/breath.js?v=3.0.0"></script>
+<script src="js/vocal-engine/noise.js?v=3.0.0"></script>
+<script src="js/vocal-engine/hum.js?v=3.0.0"></script>
+<script src="js/vocal-engine/pitch.js?v=3.0.0"></script>
+<script src="js/vocal-engine/vibrato.js?v=3.0.0"></script>
+<script src="js/vocal-engine/stereo.js?v=3.0.0"></script>
+<script src="js/vocal-engine/masking.js?v=3.0.0"></script>
+<script src="js/vocal-engine/scoring.js?v=3.0.0"></script>
+<script src="js/vocal-engine/interpretation.js?v=3.0.0"></script>
+<script src="js/vocal-engine/timeline.js?v=3.0.0"></script>
+<script src="js/vocal-engine/json-export.js?v=3.0.0"></script>
+<script src="js/vocal-engine/report-generator.js?v=3.0.0"></script>
+<script src="js/vocal-engine/pdf-export.js?v=3.0.0"></script>
+<script src="js/vocal-engine/analyzer.js?v=3.0.0"></script>
+<script src="js/vocal-engine/audio-loader.js?v=3.0.0"></script>
+<script src="js/vocal-engine/ui.js?v=3.0.0"></script>
 </body>
 </html>
