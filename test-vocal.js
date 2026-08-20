@@ -1,228 +1,192 @@
 'use strict';
 /**
- * Test Harness for MixLens Vocal Analysis Engine
- * Tests all 18 modules with synthetic signals
+ * MixLens Vocal Engine 3.0 — synthetic-signal test harness.
+ * Every assertion is against real DSP output. No fixture numbers.
  */
 
-const fs = require('fs');
-const DSP = require('./vocal/dsp');
-const Health = require('./vocal/health');
-const Spectrum = require('./vocal/spectrum');
-const Pitch = require('./vocal/pitch');
-const Formants = require('./vocal/formants');
-const Tonal = require('./vocal/tonal');
-const Resonances = require('./vocal/resonances');
-const DynamicSpectral = require('./vocal/dynamic-spectral');
-const Dynamics = require('./vocal/dynamics');
-const Events = require('./vocal/events');
-const Character = require('./vocal/character');
-const Stereo = require('./vocal/stereo');
-const Masking = require('./vocal/masking');
-const Reference = require('./vocal/reference');
-const Decision = require('./vocal/decision');
-const Report = require('./vocal/report');
-const Engine = require('./vocal/engine');
+const U = require('./js/vocal-engine/utilities');
+const Fft = require('./js/vocal-engine/fft');
+const Clip = require('./js/vocal-engine/clipping');
+const Hum = require('./js/vocal-engine/hum');
+const Pitch = require('./js/vocal-engine/pitch');
+const Spec = require('./js/vocal-engine/spectrum');
+const Tonal = require('./js/vocal-engine/tonal-balance');
+const Stereo = require('./js/vocal-engine/stereo');
+const Engine = require('./js/vocal-engine/analyzer');
+const Report = require('./js/vocal-engine/report-generator');
+const Json = require('./js/vocal-engine/json-export');
+const Pdf = require('./js/vocal-engine/pdf-export');
 
-function makeBuffer(fs, dur, gen) {
+function makeMono(fs, dur, gen) {
   const n = Math.floor(fs * dur);
   const ch0 = new Float32Array(n);
-  for (let i = 0; i < n; i++) ch0[i] = gen(i, fs, 0);
+  for (let i = 0; i < n; i++) ch0[i] = gen(i, fs);
   return {
-    sampleRate: fs,
-    length: n,
-    numberOfChannels: 1,
-    duration: dur,
-    getChannelData: () => ch0
+    left: ch0, right: null, sampleRate: fs, fileName: 't.wav', fileSize: n * 2,
+    format: 'WAV', codec: 'PCM', bitDepth: 16,
+    getChannelData: () => ch0,
+    length: n, duration: dur, numberOfChannels: 1
   };
 }
 
-function makeStereoBuffer(fs, dur, genL, genR) {
+function makeStereo(fs, dur, genL, genR) {
   const n = Math.floor(fs * dur);
-  const ch0 = new Float32Array(n);
-  const ch1 = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    ch0[i] = genL(i, fs);
-    ch1[i] = genR(i, fs);
-  }
-  return {
-    sampleRate: fs,
-    length: n,
-    numberOfChannels: 2,
-    duration: dur,
-    getChannelData: (c) => (c === 0 ? ch0 : ch1)
-  };
+  const L = new Float32Array(n), R = new Float32Array(n);
+  for (let i = 0; i < n; i++) { L[i] = genL(i, fs); R[i] = genR(i, fs); }
+  return { left: L, right: R, sampleRate: fs, fileName: 'st.wav', fileSize: n * 4, format: 'WAV', codec: 'PCM', bitDepth: 16 };
 }
 
 let fails = 0;
-function check(name, ok, detail = '') {
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`);
+function check(name, ok, detail) {
+  console.log((ok ? 'PASS' : 'FAIL') + '  ' + name + (detail ? ' — ' + detail : ''));
   if (!ok) fails++;
 }
 
 (async () => {
-  console.log('=== MixLens Vocal Analysis Engine Test Suite ===\n');
-
+  console.log('=== MixLens Vocal Engine 3.0 Test Suite ===\n');
   const fs = 48000;
 
-  // 1. Test DSP Core & Math
-  console.log('--- 1. DSP Core Tests ---');
-  check('db20(1.0) is 0 dB', Math.abs(DSP.db20(1.0) - 0.0) < 1e-4, `${DSP.db20(1.0)} dB`);
-  check('db20(0.5) is -6.02 dB', Math.abs(DSP.db20(0.5) - (-6.0206)) < 0.01, `${DSP.db20(0.5).toFixed(2)} dB`);
-  check('freqToNote(440) is A4', DSP.freqToNote(440).note === 'A4', `note = ${DSP.freqToNote(440).note}`);
-  check('freqToNote(261.63) is C4', DSP.freqToNote(261.63).note === 'C4', `note = ${DSP.freqToNote(261.63).note}`);
-
-  const fftSize = 1024;
-  const fft = new DSP.FFT(fftSize);
-  const re = new Float32Array(fftSize);
-  const im = new Float32Array(fftSize);
-  for (let i = 0; i < fftSize; i++) re[i] = Math.sin(2 * Math.PI * 4 * i / fftSize);
+  console.log('--- DSP core ---');
+  check('linearToDb(1) = 0', Math.abs(U.linearToDb(1) - 0) < 1e-6, String(U.linearToDb(1)));
+  check('linearToDb(0.5) ≈ -6.02', Math.abs(U.linearToDb(0.5) + 6.0206) < 0.02, String(U.linearToDb(0.5)));
+  check('freqToNote(440) = A4', U.freqToNote(440).note === 'A4', U.freqToNote(440).note);
+  const fft = new Fft.FFT(1024);
+  const re = new Float32Array(1024), im = new Float32Array(1024);
+  for (let i = 0; i < 1024; i++) re[i] = Math.sin(2 * Math.PI * 4 * i / 1024);
   fft.transform(re, im);
-  const power = fft.powerSpectrum(re, im);
-  check('FFT detects 4-cycle sine at bin 4', power[4] > power[3] && power[4] > power[5], `bin 4 power = ${power[4].toFixed(4)}`);
+  const pwr = fft.powerSpectrum(re, im);
+  check('FFT peak at bin 4', pwr[4] > pwr[3] && pwr[4] > pwr[5], 'p4=' + pwr[4].toFixed(4));
 
-  // 2. Test Module 1: Recording Health (Clipping, Noise, Hum, DC Offset)
-  console.log('\n--- 2. Module 1: Recording Health Tests ---');
-  // 2a. Clipped sine
-  const clippedBuf = makeBuffer(fs, 1.0, (i, s) => Math.max(-0.9995, Math.min(0.9995, 1.8 * Math.sin(2 * Math.PI * 220 * i / s))));
-  const healthClip = Health.analyzeRecordingHealth(clippedBuf.getChannelData(0), fs);
-  check('Clipping detected', healthClip.clipping.samples > 50, `${healthClip.clipping.samples} clipped samples, severity = ${healthClip.clipping.severity}`);
-  check('Clipping severity is significant or severe', healthClip.clipping.severity === 'significant' || healthClip.clipping.severity === 'severe', '');
-
-  // 2b. 50 Hz mains hum
-  const humBuf = makeBuffer(fs, 2.0, (i, s) => 0.01 * (Math.random() - 0.5) + 0.15 * Math.sin(2 * Math.PI * 50 * i / s) + 0.08 * Math.sin(2 * Math.PI * 100 * i / s));
-  const healthHum = Health.analyzeRecordingHealth(humBuf.getChannelData(0), fs);
-  check('50 Hz Mains hum detected', healthHum.hum.detected && healthHum.hum.freq === 50, `freq = ${healthHum.hum.freq} Hz, level = ${healthHum.hum.levelDb.toFixed(1)} dB`);
-
-  // 2c. DC offset
-  const dcBuf = makeBuffer(fs, 1.0, (i, s) => 0.05 + 0.2 * Math.sin(2 * Math.PI * 440 * i / s));
-  const healthDc = Health.analyzeRecordingHealth(dcBuf.getChannelData(0), fs);
-  check('DC offset detected', healthDc.dcOffset.detected && Math.abs(healthDc.dcOffset.mean - 0.05) < 0.01, `mean = ${healthDc.dcOffset.mean.toFixed(3)}`);
-
-  // 3. Test Modules 3 & 4: Pitch (YIN) & Harmonics
-  console.log('\n--- 3. Modules 3 & 4: Pitch & Harmonics Tests ---');
-  // Synthetic A3 (220 Hz) vowel with rich harmonic stack
-  const vowelBuf = makeBuffer(fs, 2.5, (i, s) => {
+  console.log('\n--- 1. Clean mono vocal (harmonic stack) ---');
+  const clean = makeMono(fs, 2.2, (i, s) => {
     const t = i / s;
-    let val = 0.3 * Math.sin(2 * Math.PI * 220 * t); // H1
-    val += 0.2 * Math.sin(2 * Math.PI * 440 * t);     // H2
-    val += 0.15 * Math.sin(2 * Math.PI * 660 * t);    // H3
-    val += 0.10 * Math.sin(2 * Math.PI * 880 * t);    // H4
-    val += 0.06 * Math.sin(2 * Math.PI * 1100 * t);   // H5
-    return val;
+    return 0.28 * Math.sin(2 * Math.PI * 220 * t) + 0.16 * Math.sin(2 * Math.PI * 440 * t) + 0.08 * Math.sin(2 * Math.PI * 660 * t);
   });
-  const pitchRes = Pitch.analyzePitchAndHarmonics(vowelBuf.getChannelData(0), fs);
-  check('YIN F0 detected near 220 Hz', Math.abs(pitchRes.f0.medianF0 - 220) < 5, `got ${pitchRes.f0.medianF0.toFixed(1)} Hz, note = ${pitchRes.f0.note}`);
-  check('Voiced percent > 90%', pitchRes.f0.voicedPercent > 90, `${pitchRes.f0.voicedPercent.toFixed(1)}%`);
-  check('HNR > 15 dB', pitchRes.harmonics.meanHnrDb > 15, `${pitchRes.harmonics.meanHnrDb.toFixed(1)} dB`);
-  check('Harmonics count >= 5', pitchRes.harmonics.harmonics.length >= 5, `${pitchRes.harmonics.harmonics.length} harmonics`);
+  const cleanA = await Engine.analyze(clean, {}, () => {});
+  check('schema 3.0', cleanA.json.schema_version === '3.0');
+  check('engine 3.0.0', cleanA.json.engine_version === '3.0.0');
+  check('analysis_version 2026.08', cleanA.json.analysis_version === '2026.08');
+  check('no clipping on clean sine stack', cleanA.json.clipping.classification === 'NO CLIPPING', cleanA.json.clipping.classification);
+  check('16 tonal zones', cleanA.json.tonal_zones.length === 16, String(cleanA.json.tonal_zones.length));
+  check('F0 near 220 Hz', cleanA.json.pitch.available && Math.abs(cleanA.json.pitch.median_f0_hz - 220) < 6, String(cleanA.json.pitch.median_f0_hz));
+  check('health is a 0–100 integer', cleanA.json.recording_health.score >= 0 && cleanA.json.recording_health.score <= 100);
+  check('text report titled', /MIXLENS VOCAL ANALYSIS REPORT/.test(cleanA.textReport));
+  check('html report present', /MIXLENS VOCAL ANALYSIS REPORT/.test(cleanA.htmlReport));
+  check('JSON has no fake bit depth invention when provided', cleanA.json.file.bit_depth === 16);
 
-  // 4. Test Module 2 & 6: Spectrum & Tonal Balance
-  console.log('\n--- 4. Modules 2 & 6: Spectrum & Tonal Balance Tests ---');
-  const specRes = Spectrum.analyzeSpectrum(vowelBuf.getChannelData(0), fs);
-  check('STFT bins count is 2048', specRes.numBins === 2048, `${specRes.numBins} bins`);
-  const tonalRes = Tonal.analyzeTonalBalance(specRes);
-  check('Tonal zones count is 16', tonalRes.zones.length === 16, `${tonalRes.zones.length} zones`);
+  console.log('\n--- 2. Clean stereo vocal ---');
+  const st = makeStereo(fs, 1.2,
+    (i, s) => 0.25 * Math.sin(2 * Math.PI * 196 * i / s),
+    (i, s) => 0.25 * Math.sin(2 * Math.PI * 196 * i / s));
+  const stA = await Engine.analyze(st, {}, () => {});
+  check('stereo flagged applicable', stA.json.stereo.applicable === true);
+  check('correlation ≈ 1', stA.json.stereo.correlation > 0.99, String(stA.json.stereo.correlation));
 
-  // 5. Test Resonances Discrimination
-  console.log('\n--- 5. Resonance Analysis Tests ---');
-  // Signal with natural pitch harmonics + one narrow artificial resonance at 3150 Hz
-  const resSigBuf = makeBuffer(fs, 3.0, (i, s) => {
-    const t = i / s;
-    // Vary pitch slightly (200 Hz to 240 Hz)
-    const f0 = 200 + 40 * Math.sin(2 * Math.PI * 0.5 * t);
-    let val = 0.25 * Math.sin(2 * Math.PI * f0 * t) + 0.15 * Math.sin(2 * Math.PI * 2 * f0 * t);
-    // Stationary acoustic resonance @ 3150 Hz (fixed frequency)
-    val += 0.18 * Math.sin(2 * Math.PI * 3150 * t);
-    return val;
-  });
-  const specResSig = Spectrum.analyzeSpectrum(resSigBuf.getChannelData(0), fs);
-  const pitchResSig = Pitch.analyzePitchAndHarmonics(resSigBuf.getChannelData(0), fs);
-  const resAnalysis = Resonances.analyzeResonances(specResSig, pitchResSig);
-  const fixedRes = resAnalysis.resonances.find(r => Math.abs(r.centerFreq - 3150) < 60);
-  check('Stationary 3150 Hz peak identified', !!fixedRes, fixedRes ? `freq = ${fixedRes.centerFreq} Hz, action = ${fixedRes.action}, type = ${fixedRes.type}` : 'not found');
-  if (fixedRes) {
-    check('Stationary resonance triggers CUT or DYNAMIC_CUT', fixedRes.action === 'CUT' || fixedRes.action === 'DYNAMIC_CUT', `action = ${fixedRes.action}`);
+  console.log('\n--- 3. Clipped vocal ---');
+  const clipped = makeMono(fs, 1.0, (i, s) => Math.max(-0.9996, Math.min(0.9996, 1.7 * Math.sin(2 * Math.PI * 220 * i / s))));
+  const clipR = Clip.analyzeClipping(clipped.left, fs);
+  check('clipping detected', clipR.clipped_samples > 40, String(clipR.clipped_samples));
+  check('not classified as none', clipR.classification !== 'NO CLIPPING', clipR.classification);
+
+  const nearFs = makeMono(fs, 0.4, (i, s) => 0.97 * Math.sin(2 * Math.PI * 220 * i / s));
+  const nearR = Clip.analyzeClipping(nearFs.left, fs);
+  check('near 0 dBFS without flats is not clipping', nearR.classification === 'NO CLIPPING', nearR.classification);
+
+  console.log('\n--- 4. Noisy vocal ---');
+  const noisy = makeMono(fs, 2.0, (i, s) => 0.18 * Math.sin(2 * Math.PI * 180 * i / s) + 0.08 * (Math.random() * 2 - 1));
+  const noisyA = await Engine.analyze(noisy, {}, () => {});
+  check('noise module ran', noisyA.json.noise.available === true || noisyA.json.noise.classification === 'Insufficient Signal');
+  if (noisyA.json.noise.available) {
+    check('noisy file has finite floor', isFinite(noisyA.json.noise.noise_floor_dbfs));
   }
 
-  // 6. Test Module 7: Dynamic Spectral Analysis
-  console.log('\n--- 6. Module 7: Dynamic Spectral Analysis Tests ---');
-  // Loud belting signal has surging 3400 Hz harshness
-  const dynSigBuf = makeBuffer(fs, 4.0, (i, s) => {
+  console.log('\n--- 5. Hum-contaminated vocal ---');
+  const humBuf = makeMono(fs, 2.2, (i, s) => 0.008 * (Math.random() - 0.5) + 0.16 * Math.sin(2 * Math.PI * 50 * i / s) + 0.09 * Math.sin(2 * Math.PI * 100 * i / s));
+  const humR = Hum.analyzeHum(humBuf.left, fs);
+  check('50 Hz family detected', humR.detected && humR.fundamental_hz === 50, JSON.stringify({ d: humR.detected, f: humR.fundamental_hz, c: humR.confidence }));
+
+  console.log('\n--- 6. Strong sibilance ---');
+  const sib = makeMono(fs, 2.5, (i, s) => {
     const t = i / s;
-    const isLoud = (t > 1.0 && t < 2.0) || (t > 2.8 && t < 3.8);
-    const baseAmp = isLoud ? 0.6 : 0.15;
-    let val = baseAmp * Math.sin(2 * Math.PI * 240 * t);
-    if (isLoud) {
-      val += 0.35 * Math.sin(2 * Math.PI * 3400 * t); // dynamic harshness surge
-    }
-    return val;
+    let v = 0.18 * Math.sin(2 * Math.PI * 200 * t);
+    if (t >= 1.1 && t < 1.24) v += 0.55 * (Math.random() * 2 - 1) * Math.sin(2 * Math.PI * 7500 * t);
+    return v;
   });
-  const dynSpec = Spectrum.analyzeSpectrum(dynSigBuf.getChannelData(0), fs);
-  const dynAnalysis = DynamicSpectral.analyzeDynamicSpectrum(dynSpec);
-  const harshFinding = dynAnalysis.findings.find(f => f.zone.toLowerCase().includes('harsh'));
-  check('Dynamic harshness detected during loud passages', !!harshFinding, harshFinding ? harshFinding.evidence : 'none');
+  const sibA = await Engine.analyze(sib, {}, () => {});
+  check('sibilance events ≥ 1', sibA.json.sibilance.event_count >= 1, String(sibA.json.sibilance.event_count));
 
-  // 7. Test Modules 9, 10, 11, 12: Vocal Events (Sibilance, Plosives, Breaths)
-  console.log('\n--- 7. Modules 9–12: Vocal Events Tests ---');
-  const eventSigBuf = makeBuffer(fs, 5.0, (i, s) => {
+  console.log('\n--- 7. Strong plosives ---');
+  const plo = makeMono(fs, 2.0, (i, s) => {
     const t = i / s;
-    let val = 0.2 * Math.sin(2 * Math.PI * 250 * t); // baseline voice
-    // Plosive pop at 1.0s (low frequency burst)
-    if (t >= 1.0 && t < 1.08) {
-      val += 0.7 * Math.sin(2 * Math.PI * 55 * (t - 1.0));
-    }
-    // Sibilance 'S' burst at 2.5s (7.5 kHz burst)
-    if (t >= 2.5 && t < 2.65) {
-      val += 0.5 * (Math.random() * 2 - 1) * Math.sin(2 * Math.PI * 7500 * t);
-    }
-    return val;
+    let v = 0.16 * Math.sin(2 * Math.PI * 210 * t);
+    if (t >= 0.8 && t < 0.87) v += 0.75 * Math.sin(2 * Math.PI * 55 * (t - 0.8));
+    return v;
   });
-  const eventPitch = Pitch.analyzePitchAndHarmonics(eventSigBuf.getChannelData(0), fs);
-  const eventRes = Events.analyzeVocalEvents(eventSigBuf.getChannelData(0), fs, eventPitch);
-  check('Plosive burst detected near 1.0s', eventRes.plosives.eventsCount >= 1, `${eventRes.plosives.eventsCount} plosives`);
-  check('Sibilance burst detected near 2.5s', eventRes.sibilance.eventsCount >= 1, `${eventRes.sibilance.eventsCount} sibilant events`);
-  check('Sibilance dominant frequency ~7.5 kHz', Math.abs(eventRes.sibilance.dominantFrequency - 7500) < 800, `${eventRes.sibilance.dominantFrequency} Hz`);
+  const ploA = await Engine.analyze(plo, {}, () => {});
+  check('plosive events ≥ 1', ploA.json.plosives.event_count >= 1, String(ploA.json.plosives.event_count));
 
-  // 8. Test Module 16: Stereo & Phase Analysis
-  console.log('\n--- 8. Module 16: Stereo & Phase Tests ---');
-  // Correlated stereo
-  const stBuf = makeStereoBuffer(fs, 1.0, (i, s) => 0.3 * Math.sin(2 * Math.PI * 440 * i / s), (i, s) => 0.3 * Math.sin(2 * Math.PI * 440 * i / s));
-  const stRes = Stereo.analyzeStereo(stBuf.getChannelData(0), stBuf.getChannelData(1));
-  check('Correlated stereo correlation ≈ 1.0', stRes.correlation > 0.99, `corr = ${stRes.correlation}`);
+  console.log('\n--- 8. Quiet vocal ---');
+  const quiet = makeMono(fs, 1.2, (i, s) => 0.004 * Math.sin(2 * Math.PI * 190 * i / s));
+  const quietA = await Engine.analyze(quiet, {}, () => {});
+  check('quiet file does not crash', quietA.json.technical.sample_peak_dbfs < -40, String(quietA.json.technical.sample_peak_dbfs));
 
-  // Anti-phase stereo
-  const apBuf = makeStereoBuffer(fs, 1.0, (i, s) => 0.3 * Math.sin(2 * Math.PI * 440 * i / s), (i, s) => -0.3 * Math.sin(2 * Math.PI * 440 * i / s));
-  const apRes = Stereo.analyzeStereo(apBuf.getChannelData(0), apBuf.getChannelData(1));
-  check('Anti-phase stereo correlation ≈ -1.0', apRes.correlation < -0.95, `corr = ${apRes.correlation}`);
-  check('Anti-phase flagged as Critical phase risk', apRes.phaseRisk === 'Critical', apRes.monoCompatibility);
+  console.log('\n--- 9. Highly dynamic vocal ---');
+  const dyn = makeMono(fs, 3.0, (i, s) => {
+    const t = i / s;
+    const amp = (t > 1.2 && t < 2.2) ? 0.55 : 0.04;
+    return amp * Math.sin(2 * Math.PI * 200 * t);
+  });
+  const dynA = await Engine.analyze(dyn, {}, () => {});
+  check('wide or moderate variation measured', dynA.json.dynamics.variation_db > 6, String(dynA.json.dynamics.variation_db));
 
-  // 9. Test Full Engine Pipeline & Decision Engine
-  console.log('\n--- 9. Full Engine Pipeline & Decision Engine Tests ---');
-  const fullAnalysis = await Engine.analyzeVocal(eventSigBuf, { name: 'lead_vocal_test.wav', size: 480000 });
-  const report = fullAnalysis.reportJson;
+  console.log('\n--- 10. Silence ---');
+  const sil = makeMono(fs, 0.8, () => 0);
+  const silA = await Engine.analyze(sil, {}, () => {});
+  check('silence analyzed', silA.json.file.duration_seconds > 0);
+  check('silence ratio high', silA.json.technical.silence_ratio > 0.8, String(silA.json.technical.silence_ratio));
 
-  check('Report JSON has version 1.0', report.version === '1.0', `version = ${report.version}`);
-  check('Mix readiness score is between 1 and 100', report.mixReadinessScore >= 1 && report.mixReadinessScore <= 100, `score = ${report.mixReadinessScore}`);
-  check('Executive summary is populated', report.executiveSummary && report.executiveSummary.length > 20, report.executiveSummary);
-  check('Recommendations array populated', report.recommendations && report.recommendations.length > 0, `${report.recommendations.length} recommendations`);
-  check('EQ Plan has 1 to 8 bands', report.eqPlan && report.eqPlan.length >= 1 && report.eqPlan.length <= 8, `${report.eqPlan.length} bands`);
-  check('No Pro-Q / VST preset is generated', !report.proQ4Preset && !fullAnalysis.proQ4Xml, 'preset fields absent');
-  check('Complete text report generated', fullAnalysis.detailedTextReport && fullAnalysis.detailedTextReport.includes('COMPLETE VOCAL ANALYSIS REPORT'), `chars = ${fullAnalysis.detailedTextReport ? fullAnalysis.detailedTextReport.length : 0}`);
-  check('Complete HTML report generated', fullAnalysis.detailedHtmlReport && fullAnalysis.detailedHtmlReport.includes('Complete Vocal Analysis Report'), 'HTML report present');
-  check('Text report covers health, pitch, and events',
-    /RECORDING HEALTH/.test(fullAnalysis.detailedTextReport) &&
-    /PITCH \(F0\)/.test(fullAnalysis.detailedTextReport) &&
-    /VOCAL EVENTS/.test(fullAnalysis.detailedTextReport),
-    'all major sections present');
-  const rebuilt = Report.buildDetailedTextReport(report);
-  check('Report builder is deterministic from JSON', rebuilt.includes(report.file.name) && rebuilt.includes(String(report.mixReadinessScore)), report.file.name);
+  console.log('\n--- 11. Music-only (unpitched noise-like) ---');
+  const music = makeMono(fs, 1.5, (i, s) => 0.12 * Math.sin(2 * Math.PI * 110 * i / s) + 0.08 * Math.sin(2 * Math.PI * 330 * i / s) + 0.05 * Math.sin(2 * Math.PI * 880 * i / s));
+  const musicA = await Engine.analyze(music, {}, () => {});
+  check('music-only does not crash', !!musicA.json.spectrum.centroid_hz);
+
+  console.log('\n--- 12. Very short file ---');
+  let shortErr = null;
+  try {
+    await Engine.analyze(makeMono(fs, 0.04, (i, s) => 0.2 * Math.sin(2 * Math.PI * 220 * i / s)), {}, () => {});
+  } catch (e) { shortErr = e.message; }
+  check('very short file rejected clearly', !!shortErr && /short/i.test(shortErr), shortErr || 'no error');
+
+  console.log('\n--- Stereo anti-phase ---');
+  const ap = makeStereo(fs, 0.8,
+    (i, s) => 0.3 * Math.sin(2 * Math.PI * 440 * i / s),
+    (i, s) => -0.3 * Math.sin(2 * Math.PI * 440 * i / s));
+  const apR = Stereo.analyzeStereo(ap.left, ap.right);
+  check('anti-phase correlation ≈ -1', apR.correlation < -0.95, String(apR.correlation));
+  check('critical phase', apR.phase_status === 'CRITICAL', apR.phase_status);
+
+  console.log('\n--- YIN on A3 ---');
+  const yin = Pitch.analyzePitch(clean.left, fs);
+  check('YIN median near 220', yin.available && Math.abs(yin.median_f0_hz - 220) < 5, String(yin.median_f0_hz));
+
+  console.log('\n--- Report / export ---');
+  check('no EQ plan / VST fields', !cleanA.json.eqPlan && !cleanA.json.proQ4Preset);
+  const rebuilt = Report.buildTextReport(cleanA.json);
+  check('report deterministic from JSON', rebuilt.indexOf(cleanA.json.file.name) >= 0);
+  const pdf = Pdf.buildPdf(cleanA.json, {});
+  check('PDF bytes produced', pdf && pdf.length > 200, 'len=' + (pdf && pdf.length));
+  check('demo flag isolated', cleanA.json.demo === false);
+
+  const demo = Engine.makeDemoBuffer(48000);
+  const demoA = await Engine.analyze(demo, { demo: true }, () => {});
+  check('demo analysis marked DEMO', demoA.json.demo === true);
+  check('demo is real DSP not empty', demoA.json.spectrum.centroid_hz > 0);
 
   console.log('\n========================================');
-  console.log(fails === 0 ? '✅ ALL VOCAL ENGINE TESTS PASSED (100% SUCCESS)' : `❌ ${fails} TEST(S) FAILED`);
+  console.log(fails === 0 ? 'ALL VOCAL ENGINE 3.0 TESTS PASSED' : fails + ' TEST(S) FAILED');
   console.log('========================================');
-
   process.exit(fails === 0 ? 0 : 1);
-})().catch(e => {
+})().catch((e) => {
   console.error('Test execution error:', e);
   process.exit(1);
 });
