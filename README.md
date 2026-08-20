@@ -1,10 +1,11 @@
-# MixLens — Vocal Engine 3.0 (+ Mix Analyzer & VoxLens)
+# MixLens — Vocal Engine 3.0 (+ Mix Analyzer, Final Mastering Analysis & VoxLens)
 
 A browser-based studio measurement suite. **100% local DSP. Your audio stays on your device.**
 
 1. **🎙 MixLens Vocal Engine 3.0 (`index.html`)** — Professional vocal *analysis* and report generator. Measurement, detection, evidence, and engineering observation. Not an automatic mixer.
 2. **📊 MixLens Audio Analyzer (`analyzer.html`)** — EBU R128 loudness and spectral analyzer for mixing / narration.
-3. **🎛 VoxLens Vocal Chain (`vox.html`)** — Real-time vocal chain (separate processing app).
+3. **🎚 Final Mastering Analysis (`final-mastering-analysis.html`)** — Mastering QC and platform delivery analyzer. Measures loudness, true peak, dynamics, spectrum, stereo/phase, clipping, and configurable platform references. **Does not master the file.**
+4. **🎛 VoxLens Vocal Chain (`vox.html`)** — Real-time vocal chain (separate processing app).
 
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen) ![Runs anywhere](https://img.shields.io/badge/platform-any%20browser-blue) ![100% Offline](https://img.shields.io/badge/privacy-100%25%20local-success)
 
@@ -72,6 +73,27 @@ Heavy STFT / YIN work runs in a **Web Worker** when the browser allows it, with 
 - **TXT** — professional readable report
 - **PDF** — title, file info, scores, tables, findings, observations
 - **Copy report**
+
+---
+
+## Final Mastering Analysis 1.0
+
+**MIXLENS · Final Mastering Analysis 1.0 · Professional Mastering QC & Platform Delivery Analyzer**  
+Engine: *Local DSP Mastering Analysis Engine* · Status: **LOCAL DSP ANALYSIS**
+
+Workflow: upload final master → local DSP analysis → technical / loudness / true-peak / dynamics / spectrum / stereo QC → platform-reference comparison → JSON / TXT / PDF report.
+
+This is **not** an automatic mastering system. It does not EQ, compress, limit, or normalize audio. Platform LUFS / true-peak figures are **reference profiles** in `js/mastering/platform-profiles.js` and may change.
+
+```
+js/mastering/
+  platform-profiles.js   editable platform reference profiles
+  analyzer.js            pipeline coordinator
+  loudness.js            EBU R128 / ITU-R BS.1770-4
+  true-peak.js           4× estimated true peak
+  clipping.js            full-scale / flat-top only
+  scoring.js             explainable 0–100 QC score
+```
 
 ---
 
