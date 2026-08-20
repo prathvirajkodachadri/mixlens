@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MixLens — Final Mastering Analysis</title>
+<meta name="description" content="MixLens Final Mastering Analysis — professional mastering QC and platform delivery analyzer. Local DSP only. Your audio stays on your device.">
+<link rel="stylesheet" href="style.css?v=3.0.0">
+<link rel="stylesheet" href="vocal.css?v=3.0.0">
+<link rel="stylesheet" href="mastering.css?v=1.0.0">
+</head>
+<body class="ve3-body ma-body">
+
+<a class="skip-link" href="#mainContent">Skip to content</a>
+
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">◉</div>
+    <div>
+      <h1>MIXLENS <span class="ver">Final Mastering Analysis 1.0</span></h1>
+      <p class="tagline">Professional Mastering QC &amp; Platform Delivery Analyzer · Local DSP Mastering Analysis Engine</p>
+    </div>
+  </div>
+  <div class="header-controls">
+    <div class="engine-status" title="All analysis runs in this browser">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>LOCAL DSP ANALYSIS</span>
+    </div>
+    <nav class="nav-pills" aria-label="MixLens applications">
+      <a class="nav-pill" href="index.html">🎙 Vocal Engine</a>
+      <a class="nav-pill" href="analyzer.html">📊 Mix Analyzer</a>
+      <a class="nav-pill active" href="final-mastering-analysis.html" aria-current="page">🎚 Final Mastering</a>
+      <a class="nav-pill" href="vox.html">🎛 VoxLens Chain</a>
+    </nav>
+  </div>
+</header>
+
+<main id="mainContent">
+  <section class="hero-vocal ma-hero" aria-labelledby="heroTitle">
+    <div class="hero-badge">LOCAL DSP ANALYSIS</div>
+    <p class="ma-kicker">Measurement · Target · Deviation · Severity · Delivery Status</p>
+    <h2 id="heroTitle" class="hero-title">Final Mastering Analysis</h2>
+    <p class="hero-sub">
+      Professional mastering QC &amp; platform delivery analyzer.<br>
+      Analyze your final master for loudness, true peak, dynamics, frequency balance, stereo compatibility, clipping, technical quality, and platform-specific delivery readiness.
+    </p>
+    <p class="privacy-line">This is an analysis and report generator. It does not master, EQ, compress, limit, or normalize your audio.</p>
+    <div class="privacy-chip">LOCAL DSP ANALYSIS · Your audio stays on your device.</div>
+
+    <div id="masterDropZone" class="dropzone-vocal" tabindex="0" role="button" aria-label="Drop final master or browse">
+      <div class="dz-icon-vocal" aria-hidden="true">⬇</div>
+      <p><strong>DROP FINAL MASTER HERE</strong></p>
+      <p class="dz-sub">WAV · FLAC · AIFF · MP3 · OGG · M4A/AAC where the browser can decode it</p>
+      <p class="dz-sub">Prioritize WAV · FLAC · AIFF for mastering QC. Your audio stays on this device.</p>
+      <div class="dz-formats">
+        <span class="dz-format-badge">WAV</span>
+        <span class="dz-format-badge">FLAC</span>
+        <span class="dz-format-badge">AIFF</span>
+        <span class="dz-format-badge">MP3</span>
+        <span class="dz-format-badge">OGG</span>
+        <span class="dz-format-badge">M4A / AAC</span>
+      </div>
+      <div class="hero-actions" style="margin-top:16px">
+        <button type="button" id="browseFileBtn" class="btn accent touch-btn">Browse Master</button>
+        <button type="button" id="loadDemoBtn" class="btn ghost touch-btn">Load Demo</button>
+      </div>
+      <input type="file" id="masterFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.aac,.ogg,.aiff,.aif" hidden>
+    </div>
+  </section>
+
+  <section id="masterProgressWrap" class="panel hidden" aria-live="polite">
+    <div class="progress-label">
+      <span id="masterProgressLabel">Starting local analysis…</span>
+      <span id="masterProgressPct">0%</span>
+    </div>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="masterProgressBar">
+      <div id="masterProgressFill"></div>
+    </div>
+    <ol id="progressChecklist" class="progress-checklist"></ol>
+  </section>
+
+  <p id="analysisError" class="analysis-error hidden" role="alert"></p>
+
+  <div id="masterDashboard" class="hidden">
+    <div id="demoBanner" class="demo-banner hidden" role="status">DEMO DATA — generated and analyzed locally. Not mixed with a user upload.</div>
+
+    <section class="panel file-panel">
+      <div>
+        <span id="masterFileName" class="fname">—</span>
+        <span id="masterFileMeta" class="fmeta">—</span>
+        <div id="fileMetaGrid" class="file-meta-grid"></div>
+        <p id="masterFormatLine" class="chart-desc"></p>
+      </div>
+      <div class="export-row">
+        <button type="button" id="exportJsonBtn" class="btn accent touch-btn">Download JSON</button>
+        <button type="button" id="exportTxtBtn" class="btn ghost touch-btn">Download TXT</button>
+        <button type="button" id="exportPdfBtn" class="btn ghost touch-btn">Download PDF</button>
+        <button type="button" id="copyReportBtn" class="btn ghost touch-btn">Copy Report</button>
+      </div>
+    </section>
+
+    <section class="player-bar" aria-label="Audio player">
+      <button type="button" id="masterPlayBtn" class="btn accent" aria-label="Play">Play</button>
+      <button type="button" id="masterPauseBtn" class="btn ghost" aria-label="Pause">Pause</button>
+      <button type="button" id="masterStopBtn" class="btn ghost" aria-label="Stop">Stop</button>
+      <input type="range" id="masterSeek" min="0" max="1000" value="0" aria-label="Seek">
+      <span id="masterTimeLabel" class="time-label">0:00.000 / 0:00.000</span>
+      <label class="vol-wrap">
+        <span>Vol</span>
+        <input type="range" id="masterVolume" min="0" max="100" value="90" aria-label="Volume">
+      </label>
+    </section>
+
+    <section class="dash-cards" aria-label="Master dashboard">
+      <article class="dash-card" id="cardQc"><div class="dash-k">QC Score</div><div class="dash-v" id="dashQc">—</div><div class="dash-s">Explainable 0–100</div></article>
+      <article class="dash-card"><div class="dash-k">True Peak</div><div class="dash-v" id="dashTp">—</div><div class="dash-s">Estimated dBTP</div></article>
+      <article class="dash-card"><div class="dash-k">Loudness</div><div class="dash-v" id="dashLufs">—</div><div class="dash-s">Integrated LUFS</div></article>
+      <article class="dash-card"><div class="dash-k">Dynamics</div><div class="dash-v" id="dashDyn">—</div><div class="dash-s">LRA / character</div></article>
+      <article class="dash-card"><div class="dash-k">Stereo</div><div class="dash-v" id="dashStereo">—</div><div class="dash-s">Width class</div></article>
+      <article class="dash-card"><div class="dash-k">Phase</div><div class="dash-v" id="dashPhase">—</div><div class="dash-s">Correlation</div></article>
+      <article class="dash-card"><div class="dash-k">Clipping</div><div class="dash-v" id="dashClip">—</div><div class="dash-s">Full-scale evidence</div></article>
+      <article class="dash-card"><div class="dash-k">Delivery</div><div class="dash-v" id="dashDelivery">—</div><div class="dash-s">Selected platform</div></article>
+    </section>
+
+    <section class="panel" aria-labelledby="platformTitle">
+      <div class="panel-title" id="platformTitle">Platform Delivery <span class="hint">REFERENCE / configurable delivery target — not a mandatory mastering LUFS</span></div>
+      <div id="platformChips" class="platform-bar" role="radiogroup" aria-label="Platform selector"></div>
+      <p class="ref-note" id="platformDisclaimer"></p>
+      <div id="platformDeliveryCard" class="delivery-banner" style="margin-top:12px">
+        <div>
+          <div class="dash-k">PLATFORM DELIVERY ANALYSIS</div>
+          <div id="platName" class="fname">—</div>
+          <p id="platNormNote" class="ref-note"></p>
+        </div>
+        <div class="d-status" id="platStatus">—</div>
+      </div>
+      <div class="meter-grid" style="margin-top:12px">
+        <div class="meter-card"><div class="meter-label">Loudness reference</div><div class="meter-value small" id="platRefLufs">—</div></div>
+        <div class="meter-card"><div class="meter-label">True peak reference</div><div class="meter-value small" id="platRefTp">—</div></div>
+        <div class="meter-card"><div class="meter-label">Measured loudness</div><div class="meter-value small" id="platMeasLufs">—</div></div>
+        <div class="meter-card"><div class="meter-label">Measured true peak</div><div class="meter-value small" id="platMeasTp">—</div></div>
+        <div class="meter-card"><div class="meter-label">Loudness difference</div><div class="meter-value small" id="platLufsDiff">—</div></div>
+        <div class="meter-card"><div class="meter-label">Peak difference</div><div class="meter-value small" id="platTpDiff">—</div></div>
+        <div class="meter-card"><div class="meter-label">Normalization estimate</div><div class="meter-value small" id="platNorm">—</div></div>
+        <div class="meter-card"><div class="meter-label">Technical status</div><div class="meter-value small" id="platTech">—</div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="customTargetPanel">
+      <div class="panel-title">Custom Delivery Target <span class="hint">Applies when Custom is selected, and as extra file-format checks</span></div>
+      <div class="custom-grid">
+        <label>Target loudness (LUFS)
+          <input type="number" id="customLufs" value="-14" step="0.1" aria-label="Target LUFS">
+        </label>
+        <label>Maximum true peak (dBTP)
+          <input type="number" id="customTp" value="-1" step="0.1" aria-label="Maximum true peak">
+        </label>
+        <label>Minimum sample rate (Hz)
+          <input type="number" id="customSr" value="48000" step="1" aria-label="Minimum sample rate">
+        </label>
+        <label>Preferred bit depth
+          <select id="customBd" aria-label="Preferred bit depth">
+            <option value="16">16-bit</option>
+            <option value="24" selected>24-bit</option>
+            <option value="32">32-bit</option>
+          </select>
+        </label>
+        <label>Channel requirement
+          <select id="customCh" aria-label="Channel requirement">
+            <option value="any" selected>Any</option>
+            <option value="stereo">Stereo</option>
+            <option value="mono">Mono</option>
+          </select>
+        </label>
+      </div>
+      <div class="hero-actions" style="margin-top:12px;justify-content:flex-start">
+        <button type="button" id="applyCustomBtn" class="btn accent touch-btn">Apply custom target</button>
+      </div>
+      <p id="customStatus" class="chart-desc"></p>
+    </section>
+
+    <section class="exec-summary-card">
+      <div class="exec-summary-head">
+        <span class="exec-title">Executive Summary</span>
+        <div class="exec-score-badge"><span>Local DSP · no AI</span></div>
+      </div>
+      <p id="overviewSummaryText" class="exec-text">Waiting for analysis…</p>
+      <ul id="execFindings" class="rpt-bullets"></ul>
+    </section>
+
+    <div class="vocal-tabs-wrap">
+      <div class="vocal-tabs" role="tablist" aria-label="Analysis views">
+        <button type="button" class="v-tab-btn active" role="tab" aria-selected="true" data-tab="tab-report">Report</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-waveform">Waveform</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-loudness">Loudness</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-truepeak">True Peak</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-dynamics">Dynamics</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-spectrum">Spectrum</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-spectrogram">Spectrogram</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-tonal">Tonal Balance</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-stereo">Stereo / Phase</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-platform">Platforms</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-compare">Compare</button>
+        <button type="button" class="v-tab-btn" role="tab" aria-selected="false" data-tab="tab-json">JSON</button>
+      </div>
+    </div>
+
+    <div id="tab-report" class="v-tab-content" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">MixLens Final Mastering Analysis Report <span class="hint">Measurement · Target · Deviation · Severity · Delivery status</span></div>
+        <div id="qcBreakdown" class="qc-breakdown"></div>
+        <div id="fullReportViewer" class="full-report-host" style="margin-top:14px">Waiting for a master upload…</div>
+      </section>
+    </div>
+
+    <div id="tab-waveform" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Waveform <span class="hint">click to seek · clipping / true-peak / silence / fade markers</span></div>
+        <div class="canvas-wrap">
+          <canvas id="waveCanvas" class="canvas-plot" style="height:160px" aria-label="Waveform"></canvas>
+        </div>
+        <div class="legend-row">
+          <span class="lg-clip">Clipping</span>
+          <span class="lg-tp">True-peak events</span>
+          <span class="lg-sil">Silence</span>
+          <span class="lg-fade">Fade</span>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-loudness" class="v-tab-content hidden" role="tabpanel">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-title">Loudness (EBU R128 / ITU-R BS.1770-4)</div>
+          <div class="meter-grid">
+            <div class="meter-card hero"><div class="meter-label">Integrated</div><div class="meter-value" id="dynIntegratedLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">Short-term max</div><div class="meter-value" id="dynShortLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">Momentary max</div><div class="meter-value" id="dynMomLufs">—</div></div>
+            <div class="meter-card"><div class="meter-label">LRA</div><div class="meter-value" id="dynLra">—</div></div>
+            <div class="meter-card"><div class="meter-label">Median ST</div><div class="meter-value" id="dynMed">—</div></div>
+            <div class="meter-card"><div class="meter-label">Confidence</div><div class="meter-value small" id="dynConf">—</div></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">Loudest / quietest</div>
+          <div id="loudSections" class="rec-evidence"></div>
+        </section>
+      </div>
+      <section class="panel" style="margin-top:14px">
+        <div class="panel-title">Loudness Timeline <span class="hint">Short-term LUFS · hover · click to seek</span></div>
+        <div class="chart-toolbar">
+          <button type="button" id="loudZoomOut" class="btn ghost small-btn">Reset zoom</button>
+          <span class="hint">Drag to zoom</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="loudnessCanvas" class="canvas-plot" style="height:200px" aria-label="Loudness timeline"></canvas>
+          <div id="loudnessTooltip" class="canvas-tooltip"></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-truepeak" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Estimated True Peak <span class="hint">4× interpolation · not a hardware meter</span></div>
+        <div class="meter-grid">
+          <div class="meter-card hero"><div class="meter-label">Estimated True Peak</div><div class="meter-value" id="tpVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Sample Peak</div><div class="meter-value" id="spVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">ISP difference</div><div class="meter-value" id="ispDiff">—</div></div>
+          <div class="meter-card"><div class="meter-label">Events</div><div class="meter-value" id="tpEvents">—</div></div>
+        </div>
+        <p id="tpNote" class="chart-desc"></p>
+        <div class="canvas-wrap" style="margin-top:12px">
+          <canvas id="tpCanvas" class="canvas-plot" style="height:180px" aria-label="True peak timeline"></canvas>
+        </div>
+        <div id="tpEventChips" class="event-chips-list"></div>
+      </section>
+    </div>
+
+    <div id="tab-dynamics" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Dynamics <span class="hint">Crest factor is peak − RMS, not an official DR meter</span></div>
+        <div class="meter-grid">
+          <div class="meter-card hero"><div class="meter-label">Crest factor</div><div class="meter-value" id="crestVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">PLR</div><div class="meter-value" id="plrVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">LRA</div><div class="meter-value" id="lraVal">—</div></div>
+          <div class="meter-card"><div class="meter-label">Character</div><div class="meter-value small" id="charVal">—</div></div>
+        </div>
+        <p id="dynEvidence" class="rec-body"></p>
+        <p id="dynCorrNote" class="chart-desc"></p>
+        <div class="canvas-wrap">
+          <canvas id="dynCanvas" class="canvas-plot" style="height:180px" aria-label="Dynamic profile"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-spectrum" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Interactive Frequency Spectrum <span class="hint">20 Hz → 20 kHz logarithmic</span></div>
+        <div class="chart-toolbar">
+          <button type="button" id="specZoomOut" class="btn ghost small-btn">Reset zoom</button>
+          <span class="hint">Drag to zoom · hover for frequency and dB</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="spectrumCanvas" class="canvas-plot" aria-label="Frequency spectrum"></canvas>
+          <div id="spectrumTooltip" class="canvas-tooltip"></div>
+          <span class="canvas-overlay-hint">Solid average · dashed median · band 10–90</span>
+        </div>
+        <p id="spectrumDesc" class="chart-desc"></p>
+      </section>
+    </div>
+
+    <div id="tab-spectrogram" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Spectrogram <span class="hint">Time vs log frequency · click to seek</span></div>
+        <div class="canvas-wrap">
+          <canvas id="spectrogramCanvas" class="canvas-plot" aria-label="Spectrogram"></canvas>
+          <div id="sgTooltip" class="canvas-tooltip"></div>
+        </div>
+        <p class="chart-desc">Magnitude in dBFS. This is measured STFT energy, not a decorative heatmap.</p>
+      </section>
+    </div>
+
+    <div id="tab-tonal" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Tonal Balance <span class="hint">Relative to this master’s equal-per-octave baseline — not an EQ recipe</span></div>
+        <div id="tonalGroups" class="tonal-groups"></div>
+        <div class="canvas-wrap">
+          <canvas id="tonalCanvas" class="canvas-plot" style="height:220px" aria-label="Tonal balance"></canvas>
+        </div>
+        <div class="v-table-wrap h-scroll">
+          <table class="v-table">
+            <thead>
+              <tr><th>Region</th><th>Range</th><th>Energy %</th><th>Pink share</th><th>Median</th><th>Status</th></tr>
+            </thead>
+            <tbody id="tonalTableBody"></tbody>
+          </table>
+        </div>
+        <div id="spectralExtremes" class="rec-list" style="margin-top:12px"></div>
+      </section>
+    </div>
+
+    <div id="tab-stereo" class="v-tab-content hidden" role="tabpanel">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-title">Stereo Image</div>
+          <div class="meter-grid">
+            <div class="meter-card"><div class="meter-label">Width</div><div class="meter-value small" id="widthVal">—</div></div>
+            <div class="meter-card"><div class="meter-label">Mid</div><div class="meter-value small" id="midVal">—</div></div>
+            <div class="meter-card"><div class="meter-label">Side</div><div class="meter-value small" id="sideVal">—</div></div>
+            <div class="meter-card"><div class="meter-label">L/R Δ</div><div class="meter-value small" id="lrVal">—</div></div>
+          </div>
+          <p id="stereoNote" class="chart-desc"></p>
+          <div class="canvas-wrap">
+            <canvas id="widthCanvas" class="canvas-plot" style="height:160px" aria-label="Stereo width"></canvas>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">Phase Correlation</div>
+          <div class="phase-scale-ma"><span>+1</span><span>0</span><span>−1</span></div>
+          <div class="phase-track-ma" aria-label="Correlation meter"><div id="phaseNeedle" class="phase-needle-ma"></div></div>
+          <div id="phaseLabel" class="phase-label">—</div>
+          <div id="monoBox" class="rec-evidence" style="margin-top:12px"></div>
+          <div class="v-table-wrap" style="margin-top:12px">
+            <table class="v-table">
+              <thead><tr><th>Band</th><th>Correlation</th><th>Status</th></tr></thead>
+              <tbody id="phaseBandBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <section class="panel" style="margin-top:14px">
+        <div class="panel-title">Correlation over time</div>
+        <div class="canvas-wrap">
+          <canvas id="corrCanvas" class="canvas-plot" style="height:160px" aria-label="Correlation timeline"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-platform" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Compare All Platforms <span class="hint">One master may be delivered to multiple platforms</span></div>
+        <p class="ref-note">Platform values are reference profiles and may change. Verify current platform documentation before final commercial delivery.</p>
+        <div class="v-table-wrap h-scroll">
+          <table class="v-table ma-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Measured LUFS</th>
+                <th>Reference LUFS</th>
+                <th>Difference</th>
+                <th>True Peak</th>
+                <th>Reference TP</th>
+                <th>TP Difference</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="platformTableBody"></tbody>
+          </table>
+        </div>
+        <div class="canvas-wrap" style="margin-top:14px">
+          <canvas id="platCanvas" class="canvas-plot" style="height:220px" aria-label="Platform comparison"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div id="tab-compare" class="v-tab-content hidden" role="tabpanel">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-title">Reference Master <span class="hint">Optional · relative differences only</span></div>
+          <p class="chart-desc">Does not recommend processing. Audio is not modified.</p>
+          <label class="file-label">
+            <span>Upload reference master</span>
+            <input type="file" id="refFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff,.aif">
+          </label>
+          <div id="refCompareList" class="rec-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">A/B · Master B <span class="hint">Optional loudness-matched interpretation</span></div>
+          <label class="file-label">
+            <span>Upload Master B</span>
+            <input type="file" id="bFileInput" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg,.aiff,.aif">
+          </label>
+          <div id="abCompareList" class="rec-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="tab-json" class="v-tab-content hidden" role="tabpanel">
+      <section class="panel">
+        <div class="panel-title">Machine-readable JSON <span class="hint">schema_version 1.0 · engine 1.0.0</span></div>
+        <div id="reportJsonViewer" class="json-box"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>
+  MixLens Final Mastering Analysis 1.0 — 100% local DSP analysis · Your audio stays on your device · MIT License<br>
+  This report does not guarantee platform playback behavior and does not replace final engineering judgment.
+</footer>
+
+<script src="js/mastering/utilities.js?v=1.0.0"></script>
+<script src="js/mastering/fft.js?v=1.0.0"></script>
+<script src="js/mastering/stft.js?v=1.0.0"></script>
+<script src="js/mastering/audio-loader.js?v=1.0.0"></script>
+<script src="js/mastering/clipping.js?v=1.0.0"></script>
+<script src="js/mastering/loudness.js?v=1.0.0"></script>
+<script src="js/mastering/true-peak.js?v=1.0.0"></script>
+<script src="js/mastering/dynamics.js?v=1.0.0"></script>
+<script src="js/mastering/spectrum.js?v=1.0.0"></script>
+<script src="js/mastering/stereo.js?v=1.0.0"></script>
+<script src="js/mastering/phase.js?v=1.0.0"></script>
+<script src="js/mastering/mono.js?v=1.0.0"></script>
+<script src="js/mastering/silence.js?v=1.0.0"></script>
+<script src="js/mastering/fade.js?v=1.0.0"></script>
+<script src="js/mastering/distortion.js?v=1.0.0"></script>
+<script src="js/mastering/platform-profiles.js?v=1.0.0"></script>
+<script src="js/mastering/platform-analysis.js?v=1.0.0"></script>
+<script src="js/mastering/scoring.js?v=1.0.0"></script>
+<script src="js/mastering/export-json.js?v=1.0.0"></script>
+<script src="js/mastering/export-txt.js?v=1.0.0"></script>
+<script src="js/mastering/report-generator.js?v=1.0.0"></script>
+<script src="js/mastering/export-pdf.js?v=1.0.0"></script>
+<script src="js/mastering/analyzer.js?v=1.0.0"></script>
+<script src="js/mastering/ui.js?v=1.0.0"></script>
+</body>
+</html>
